@@ -1,0 +1,5 @@
+NOAH_RTC_Tool/output/
+NOAH_RTC_Tool/real_models/
+
+*/ipynb_checkpoints
+*.pyc

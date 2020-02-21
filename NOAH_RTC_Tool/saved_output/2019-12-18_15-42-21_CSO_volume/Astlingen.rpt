@@ -1,0 +1,42 @@
+
+  EPA STORM WATER MANAGEMENT MODEL - VERSION 5.1 (Build 5.3.0.dev0)
+  --------------------------------------------------------------
+
+  
+  *********************************************************
+  NOTE: The summary statistics displayed in this report are
+  based on results found at every computational time step,  
+  not just on results from each reporting time step.
+  *********************************************************
+  
+  ****************
+  Analysis Options
+  ****************
+  Flow Units ............... CMS
+  Process Models:
+    Rainfall/Runoff ........ YES
+    RDII ................... NO
+    Snowmelt ............... NO
+    Groundwater ............ NO
+    Flow Routing ........... YES
+    Ponding Allowed ........ YES
+    Water Quality .......... NO
+  Infiltration Method ...... HORTON
+  Flow Routing Method ...... DYNWAVE
+  Surcharge Method ......... EXTRAN
+  Starting Date ............ 05/01/2000 00:00:00
+  Ending Date .............. 08/15/2000 23:55:00
+  Antecedent Dry Days ...... 0.0
+  Report Time Step ......... 00:05:00
+  Wet Time Step ............ 00:05:00
+  Dry Time Step ............ 00:05:00
+  Routing Time Step ........ 30.00 sec
+  Variable Time Step ....... YES
+  Maximum Trials ........... 8
+  Number of Threads ........ 1
+  Head Tolerance ........... 0.001500 m
+  
+
+  Analysis begun on:  Wed Dec 18 16:11:06 2019
+  Analysis ended on:  Wed Dec 18 16:11:14 2019
+  Total elapsed time: 00:00:08

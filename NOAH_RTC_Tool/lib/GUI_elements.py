@@ -121,6 +121,7 @@ def write_config(self):
                           'ReportingTimesteps_min': '5',
                           'Random_setting': '0'}
     config['Model'] = {'Modelname':self.param.model_name.get(),
+                       'Modeldirectory':self.param.model_dir.get(),                       
                       'Rain series':''
                       }
     
@@ -159,7 +160,7 @@ def write_config(self):
     # save the file
     config_name = self.param.model_name.get()
     
-    config_path = '../../config/saved_configs/'
+    config_path = '../config/saved_configs/'
     with open(config_path + config_name + '.ini','w') as configfile: 
 #              '../../config/saved_configs/example.ini','w') as configfile:
         config.write(configfile)
@@ -171,6 +172,7 @@ class parameters(object):
         
         # Define model
         self.model_name = StringVar()
+        self.model_dir = StringVar()
         self.Overwrite_config = IntVar()
         self.status = StringVar()
         self.status.set('Ready')
@@ -286,12 +288,13 @@ def disableEntry():
 # functions for the GUI buttons
 
 def OpenFile(self):
-    init_dir = "../../model"
-    name = filedialog.askopenfilename(initialdir=init_dir,
-                       filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
+    path = filedialog.askopenfilename(filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
                        title = "Choose a file.")
-    name = name.split('/')[-1].split('.')[-2]
-    self.param.model_name.set(name)
+    modelname = path.split('/')[-1].split('.')[-2]
+    self.param.model_name.set(modelname)
+    # Define path of the model     
+    directory = os.path.split(path)[0]
+    self.param.model_dir.set(directory)
     #Using try in case user types in unknown file or closes without choosing a file.
     #     try:
     #         name.split('.')[-1] == 'inp'
@@ -303,14 +306,11 @@ def OpenFile(self):
 #===================================================================     
 
 def generate_SWMM_file(self):
-    init_dir = "../../model"
-    name = filedialog.asksaveasfilename(initialdir=init_dir,
-                            filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
+    name = filedialog.asksaveasfilename(initialdir = self.param.model_dir.get() ,filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
                             title = "Save file as", defaultextension='.inp')
-    # name = init_dir + "/" + self.param.model_name.get()+'_RTC.inp'
-# Read the .inp file from the model specified. 
-    os.getcwd()
-    read_file = '../../model/'+self.param.model_name.get()+'.inp'
+    
+    # Read the .inp file from the model specified. 
+    read_file = self.param.model_dir.get()+'/'+self.param.model_name.get()+'.inp'
     with open(read_file) as f:
         with open(name, "w") as f1:
             for line in f:
@@ -516,7 +516,7 @@ def Results_table(title, msg):
 # Show plots 
 def Results_plot(location,timestamp_folder):
     import pickle
-    pickle_in = open("../../output/"+ timestamp_folder + "/First_step_simulations.pickle","rb")
+    pickle_in = open("../output/"+ timestamp_folder + "/First_step_simulations.pickle","rb")
     df = pickle.load(pickle_in)
         # plt.xticks(fontsize = size-2)
         # plt.yticks(fontsize = size-2)
@@ -530,7 +530,7 @@ def Results_plot(location,timestamp_folder):
     ax.set_xlabel('starting points',fontsize = size)
     ax.set_ylabel('Objective value',fontsize = size)
     ax.set_title('Results of first step of the optimization',fontsize = size)
-    figure.savefig("../../output/" + timestamp_folder + '/Plot of first step of the optimization.png')
+    figure.savefig("../output/" + timestamp_folder + '/Plot of first step of the optimization.png')
 
 # Shows the results of the optimization
 def First_step_optimization_plot(timestamp_folder):
@@ -544,7 +544,7 @@ def First_step_optimization_plot(timestamp_folder):
     bframe = Frame(popup_plot)
     bframe.grid(row = 2,sticky = 'nsew')
 
-    with open('../../output/' + timestamp_folder + '/optimized_results.txt','r') as file:
+    with open('../output/' + timestamp_folder + '/optimized_results.txt','r') as file:
         resultfile = file.read()  
     res_text = scrolledtext.ScrolledText(tframe, height = 15, width = 70, wrap = "word")
     res_text .grid(row = 0, column = 0)

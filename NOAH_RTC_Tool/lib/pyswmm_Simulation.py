@@ -39,9 +39,10 @@ def single_simulation(config_file):
 #    starttime = time.time()
 # configuration file is read and variables are defined according o that. 
     config = configparser.ConfigParser()
-    config.read('../../config/saved_configs/'+config_file)
+    config.read('../config/saved_configs/'+config_file)
     
     model_name = config['Model']['modelname']
+    model_dir = config['Model']['modeldirectory']
 #    rain_series = config['Model']['rain_series']
     
     RBC = config['RuleBasedControl']
@@ -57,10 +58,10 @@ def single_simulation(config_file):
                                   
     # output files saved:
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    os.mkdir('../../output/'+timestamp)   
+    os.mkdir('../output/'+timestamp)   
 
     # Simulation is running
-    with Simulation('../../model/'+ model_name + '.inp' , '../../output/' + timestamp + '/' + model_name + '.rpt', '../../output/' + timestamp + '/' + model_name + '.out') as sim: 
+    with Simulation(model_dir + '/' + model_name + '.inp' , '../output/' + timestamp + '/' + model_name + '.rpt', '../output/' + timestamp + '/' + model_name + '.out') as sim: 
         for step in sim:
 #            pass
             # Compute control steps
@@ -82,8 +83,8 @@ class Optimizer:
         
 #         create folder with the time stamp for the first simulation. All results are stored in this.  
         self.timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        os.mkdir('../../output/'+self.timestamp)   
-        model_outfile = '../../output/' + str(self.timestamp) + '/' + str(self.model_name) + '.out'
+        os.mkdir('../output/'+self.timestamp)   
+        model_outfile = '../output/' + str(self.timestamp) + '/' + str(self.model_name) + '.out'
         
            
 #        result = self.optimized_simulation(self.initial_value) # one simulation 
@@ -111,9 +112,10 @@ class Optimizer:
     # configuration file is read and variables are defined according to that. 
     def read_config(self,config_file):
         config = configparser.ConfigParser()
-        config.read('../../config/saved_configs/'+config_file)
+        config.read('../config/saved_configs/'+config_file)
         
         self.model_name = config['Model']['modelname']
+        self.model_dir = config['Model']['modeldirectory']
     #    rain_series = config['Model']['rain_series']
         
         RBC = config['RuleBasedControl']
@@ -155,7 +157,7 @@ class Optimizer:
 
         df = pd.DataFrame(xy, columns = ['starting points','objective values'])
         
-        pickle_path = '../../output/'+self.timestamp
+        pickle_path = '../output/'+self.timestamp
         pickle_out = open(pickle_path + "/First_step_simulations.pickle","wb")
         pickle.dump(df, pickle_out)
         pickle_out.close()
@@ -209,7 +211,7 @@ class Optimizer:
     def optimized_simulation(self, x):
         
         # Run simulation
-        with Simulation('../../model/'+ self.model_name + '.inp' , '../../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
+        with Simulation(self.model_dir +'/'+ self.model_name + '.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
             for step in sim:
                 # Compute control steps
                 if Nodes(sim)[self.sensor1_id].depth > x:
@@ -218,7 +220,7 @@ class Optimizer:
                     Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_False
 
         # Output file is defined
-        model_outfile = '../../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
+        model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
         if self.CSO_objective == 'volume':
             if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
                 objective_value = self.count_CSO_volume([self.CSO_id1],model_outfile)
@@ -324,7 +326,7 @@ class Optimizer:
         # Calculate optimial results
         opt_setting = result.x[0]
 
-        model_outfile = '../../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
+        model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
         if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
             opt_vol = self.count_CSO_volume([self.CSO_id1],model_outfile)
             opt_CSO_events = self.count_CSO_events([self.CSO_id1],model_outfile)
@@ -335,7 +337,7 @@ class Optimizer:
             opt_vol = self.count_CSO_volume([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
             opt_CSO_events = self.count_CSO_events([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
         
-        with open('../../output/' + self.timestamp + '/optimized_results.txt','w') as file:
+        with open('../output/' + self.timestamp + '/optimized_results.txt','w') as file:
             file.write("""This is the file with the optimization results from NOAH RTC Tool optimization. \n
 The model used is {}\n
 Total time of computation is {} minutes\n
@@ -350,7 +352,7 @@ This will result in a CSO volume from the specified CSO structures of {:.0f} m3 
             file.write('\n\nThe used config file is \n\n')
             
             config = configparser.ConfigParser()
-            config.read('../../config/saved_configs/'+config_file)
+            config.read('../config/saved_configs/'+config_file)
             config.write(file)
 
 #            config_file = config.read('../../config/saved_configs/'+config_file)

@@ -13,5 +13,6 @@ conda install spyder
 pip install pyswmm
 pip install tkintertable
 pip install swmmtoolbox
+pip install swmmio
 
 # For older versions from Gitlab see project https://gitlab.gbar.dtu.dk/jowi/NOAH 

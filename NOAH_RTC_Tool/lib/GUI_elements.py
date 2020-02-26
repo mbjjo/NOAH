@@ -27,6 +27,7 @@ import configparser
 from configparser import ConfigParser
 import os 
 from threading import Thread
+import swmmio
 # import the necessary modelus from pyswmm
 import pyswmm
 from pyswmm import Simulation, Nodes, Links, SystemStats, Subcatchments
@@ -117,8 +118,9 @@ def write_config(self):
     
     config = configparser.ConfigParser()
     config['DEFAULT'] = {}
-    config['Settings'] = {'System_Units': 'SI', 
-                          'ReportingTimesteps_min': '5',
+    
+    config['Settings'] = {'System_Units': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.FLOW_UNITS, 
+                          'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP,
                           'Random_setting': '0'}
     config['Model'] = {'Modelname':self.param.model_name.get(),
                        'Modeldirectory':self.param.model_dir.get(),                       
@@ -178,6 +180,7 @@ class parameters(object):
         self.status.set('Ready')
         self.sim_time = StringVar()
         self.sim_time.set('LOOONG time')
+        
         # Define Control settings in the model 
         self.Control_tag = StringVar()
         self.control_weight1 = IntVar()
@@ -192,7 +195,6 @@ class parameters(object):
         self.red_flood = IntVar()
         self.red_CSO = IntVar()
         self.StableWaterLevel = IntVar()
-        
         
         self.sensors = ''
         self.target_settings = 0

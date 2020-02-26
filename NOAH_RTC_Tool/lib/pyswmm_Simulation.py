@@ -91,7 +91,6 @@ class Optimizer:
 #        result = self.global_optimizer() # several simulations 
         result = self.Two_step_optimizer() # 2 step optimization  
         
-        
         print(result)
 #        print(type(result))
         endtime = time.time()
@@ -114,8 +113,14 @@ class Optimizer:
         config = configparser.ConfigParser()
         config.read('../config/saved_configs/'+config_file)
         
+        self.system_units = config['Settings']['System_Units']
+        rpt_step_tmp = config['Settings']['Reporting_timesteps']      
+        rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
+        self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
         self.model_name = config['Model']['modelname']
         self.model_dir = config['Model']['modeldirectory']
+        
+        
     #    rain_series = config['Model']['rain_series']
         
         RBC = config['RuleBasedControl']
@@ -258,7 +263,7 @@ class Optimizer:
     # Note that the VSO's are now computed as regular nodes where flooding simulates overflow. 
     # If CSO's are outlets the 'Flow_lost_flooding' should be changed to 'Total_inflow'
         df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],'Flow_lost_flooding']))for i in range(len(CSO_ids))),axis = 1)
-        df = df*5*60 # Assumes that all time steps are 5 minutes. Can be read from the SWMM file. 
+        df = df*self.report_times_steps*60 
         CSO_volume = df.sum().sum()
         return CSO_volume 
 
@@ -275,6 +280,8 @@ class Optimizer:
         
     
         def fill_zero(df,dt,max_length,val):
+            # dt is the time between two CSO events before they are counted as seperate events 
+            # max_lengt is the maximum time allowed for one continous CSO event before it is counted as several events. 
             import numpy as np
         
             for i in range(df.shape[1]): # .shape[1] = the number of columns
@@ -307,7 +314,8 @@ class Optimizer:
         # calling fill_zero function. 1440 is the amount of minutes (24hr) chosen to be the limit between CSO events
         # Time steps i simualtion are 5 minutes.
         # if there is less than this time between overflow events these are considered as the same overflow event.
-        fill_zero(onezero,1440/5,1440/5,1)
+        
+        fill_zero(onezero,dt = 1440/self.report_times_steps,max_length = 1440/self.report_times_steps,val = 1)
       
         group_ids = onezero != onezero.shift()
         CSO_events = onezero[group_ids].sum().sum()

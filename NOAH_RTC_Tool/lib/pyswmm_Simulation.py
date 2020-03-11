@@ -20,13 +20,12 @@ import pandas as pd
 import pickle
 import configparser
 import time
-import os
+import os, shutil
 from threading import Thread
 from datetime import datetime
 import swmmtoolbox.swmmtoolbox as swmmtoolbox
 import pyswmm
-from pyswmm import Simulation,Nodes,Links,SystemStats
-
+from pyswmm import Simulation,Nodes,Links,SystemStats, raingages
 import GUI_elements
 #================================================    
 
@@ -43,37 +42,76 @@ def single_simulation(config_file):
     
     model_name = config['Model']['modelname']
     model_dir = config['Model']['modeldirectory']
-#    rain_series = config['Model']['rain_series']
-    
-    RBC = config['RuleBasedControl']
-    sensor1_id = RBC['sensor1_id']    
-    sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
-    actuator1_id = RBC['actuator1_id']
-    actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
-    actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
-    
-    
+    rpt_step_tmp = config['Settings']['Reporting_timesteps']      
+    rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
+    report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
 
-                                  
-                                  
     # output files saved:
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     os.mkdir('../output/'+timestamp)   
+    
+    RBC = config['RuleBasedControl']
+    actuator_type = RBC['actuator_type']
+    if actuator_type == 'orifice':
+        sensor1_id = RBC['sensor1_id']    
+        actuator1_id = RBC['actuator1_id']
+        sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
+        actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
+        actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
+        
+        # Simulation is running
+        with Simulation(model_dir + '/' + model_name + '.inp' , '../output/' + timestamp + '/' + model_name + '.rpt', '../output/' + timestamp + '/' + model_name + '.out') as sim: 
+            for step in sim:
+                # Compute control steps
+                if Nodes(sim)[sensor1_id].depth > sensor1_critical_depth:
+                    Links(sim)[actuator1_id].target_setting = actuator1_target_setting_True
+                else:
+                    Links(sim)[actuator1_id].target_setting = actuator1_target_setting_False
+                print('Complete: {:.2f}'.format(sim.percent_complete))
+    elif actuator_type == 'pump':
 
-    # Simulation is running
-    with Simulation(model_dir + '/' + model_name + '.inp' , '../output/' + timestamp + '/' + model_name + '.rpt', '../output/' + timestamp + '/' + model_name + '.out') as sim: 
-        for step in sim:
-#            pass
-            # Compute control steps
-            if Nodes(sim)[sensor1_id].depth > sensor1_critical_depth:
-                Links(sim)[actuator1_id].target_setting = actuator1_target_setting_True
-            else:
-                Links(sim)[actuator1_id].target_setting = actuator1_target_setting_False
+        # Parameters: 
+        sensor1_id = RBC['sensor1_id']    
+        actuator1_id = RBC['actuator1_id']
+        sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
+        actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
+        actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
+        
+        sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
+        actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
+        actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
+        
+        RG1 = RBC['raingage1']
+        rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
+        rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
+    
+        precipitation = list()
+        
+        # Simulation is running
+        with Simulation(model_dir + '/' + model_name + '.inp' , '../output/' + timestamp + '/' + model_name + '.rpt', '../output/' + timestamp + '/' + model_name + '.out') as sim: 
+            # help(Pump1)
+            for step in sim:
+                precipitation.append(raingages.RainGages(sim)[RG1].total_precip)
+                # Compute control steps
+                # Wet weather rule
+                if np.mean(precipitation[-int(rainfall_threshold_time/report_times_steps):]) > rainfall_threshold_value:
+                    if Nodes(sim)[sensor1_id].depth > sensor1_critical_depth: # Setting start level
+                        Links(sim)[actuator1_id].target_setting = actuator1_target_setting_True
+                    elif Nodes(sim)[sensor1_id].depth < 0.1: # Setting stop level
+                        Links(sim)[actuator1_id].target_setting = actuator1_target_setting_False
+        
+                # Dry weather rule
+                else:
+                    if Nodes(sim)[sensor1_id].depth > sensor1_critical_depth_dry: # Setting start level
+                        Links(sim)[actuator1_id].target_setting = actuator1_target_setting_True_dry
+                    elif Nodes(sim)[sensor1_id].depth < 0.1 : # Setting stop level
+                        Links(sim)[actuator1_id].target_setting = actuator1_target_setting_False_dry
+                print('Complete: {:.2f}'.format(sim.percent_complete))
+                
+    print('Simulation ran without optimization')
+                
 
-        print('Simulation ran without optimization')
- 
-#================================================     
-
+# =============================================================================
 #config_file = 'example.ini'
 
 class Optimizer:
@@ -86,7 +124,9 @@ class Optimizer:
         os.mkdir('../output/'+self.timestamp)   
         model_outfile = '../output/' + str(self.timestamp) + '/' + str(self.model_name) + '.out'
         
-           
+        # self.Redefine_Timeseries()
+        
+        
 #        result = self.optimized_simulation(self.initial_value) # one simulation 
 #        result = self.global_optimizer() # several simulations 
         result = self.Two_step_optimizer() # 2 step optimization  
@@ -120,16 +160,22 @@ class Optimizer:
         self.model_name = config['Model']['modelname']
         self.model_dir = config['Model']['modeldirectory']
         
-        
     #    rain_series = config['Model']['rain_series']
         
         RBC = config['RuleBasedControl']
+        self.actuator_type = RBC['actuator_type']
         self.sensor1_id = RBC['sensor1_id']    
-        self.sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
         self.actuator1_id = RBC['actuator1_id']
+        self.sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
         self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
         self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
-        
+        self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
+        self.actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
+        self.actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
+        self.RG1 = RBC['raingage1']
+        self.rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
+        self.rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
+
         Optimization = config['Optimization']
         self.useoptimization = int(Optimization['useoptimization'])
         self.optimization_method = Optimization['optimization_method']
@@ -148,6 +194,56 @@ class Optimizer:
 ##        self.initial_value = float(Optimization['initial_value'])
 #        self.max_iterations_bashop = int(Optimization['max_iterations_bashop'])
 #        self.max_iteration_per_minimization = int(Optimization['max_iteration_per_minimization'])
+    
+# Creating a 
+    def create_tmp_file(self):
+        
+        
+        
+        self.Redefine_Timeseries()
+
+        
+    
+    def Redefine_Timeseries(self):
+    #Changing the path of the Time series to run models.
+        from swmmio.utils import modify_model
+        from swmmio.utils.modify_model import replace_inp_section
+        from swmmio.utils.dataframes import create_dataframeINP
+
+        # Extracting a section (Timeseries) to a pandas DataFrame 
+        path = self.model_dir
+        inp_file = self.model_name
+        baseline = path + '/' + inp_file + '.inp'
+        
+        
+        # Create a dataframe of the model's time series 
+        Timeseries = create_dataframeINP(baseline, '[TIMESERIES]')
+        New_Timeseries = Timeseries.copy()
+        
+        # Modify the path containing the timeseries 
+        for i in range(len(Timeseries)):
+            string = Timeseries.iloc[i][0]
+            if '"' in string:   # Check if string is an external file if not nothing is changed. 
+                                # This might be slow of the timeseries are long
+                Rainfile_old = string.split('"')[-2]
+                if '\\' in Rainfile_old: # If the rain file is in an absolute path this is changed (Also if is in another directory than the model)
+                    Rainfile_old = Rainfile_old.split('/')[-1]
+                Rain_name = string.split('"')[-3]
+                Rainfile_new = path + '/' + Rainfile_old
+                New_Timeseries.iloc[i][0] = Rain_name + '"' + Rainfile_new + '"'
+                print('Rainfile_new: '+ Rainfile_new)
+                print('Rainfile_old: '+ Rainfile_old)
+                print('Rain_name:' + Rain_name)
+        # Create a temporary file with the adjusted path
+        new_file = inp_file + '_tmp_.inp'
+        shutil.copyfile(baseline, path + '/' + new_file)
+        print('path:' + path ) 
+        print('new_file:' + new_file) 
+        # print('path:' + path ) 
+        #Overwrite the TIMESERIES section of the new model with the adjusted data
+        with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
+            replace_inp_section(path + '/' + new_file, '[TIMESERIES]', New_Timeseries)
+        
         
     def Two_step_optimizer(self):
        
@@ -171,15 +267,19 @@ class Optimizer:
         start_value = starting_points[initial_simulation.argmin()]
         
         
-        # Second step: Simple optimization with simplex
-        print('begins optimization with simplex')
-        print('start_value' + str(start_value))
-        result = optimize.minimize(fun = self.optimized_simulation,
+        if self.maxiterations > 0:
+            # Second step: Simple optimization with simplex
+            print('begins optimization with simplex')
+            print('start_value ' + str(start_value))
+            result = optimize.minimize(fun = self.optimized_simulation,
                                   x0 = start_value, method='Nelder-Mead',
                                   options = {'disp':True,'maxiter':self.maxiterations})
-        
+        else:
+            result = {'Only ran the inital simulations. No optimization was performed afterwards.':[],
+                      'x': [start_value]}
+        print(result)
         # Run one more simulation to ensure that the saved .rpt and .out are the ones from the optimal setup. 
-        self.optimized_simulation(result.x[0])
+        self.optimized_simulation(result['x'][0])
 
         return result
 
@@ -215,15 +315,39 @@ class Optimizer:
     # optimized parameter is 'Critical depth'
     def optimized_simulation(self, x):
         
-        # Run simulation
-        with Simulation(self.model_dir +'/'+ self.model_name + '.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
-            for step in sim:
-                # Compute control steps
-                if Nodes(sim)[self.sensor1_id].depth > x:
-                    Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_True
-                else:
-                    Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_False
-
+        if self.actuator_type == 'orifice':
+            # Run simulation
+            with Simulation(self.model_dir +'/'+ self.model_name + '.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
+                for step in sim:
+                    # Compute control steps
+                    if Nodes(sim)[self.sensor1_id].depth > x:
+                        Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_True
+                    else:
+                        Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_False
+        elif self.actuator_type == 'pump':
+            # Run simulation
+            with Simulation(self.model_dir + '/' + self.model_name + '.inp' , '../output/' + self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
+                precipitation = list()
+                for step in sim:
+                    precipitation.append(raingages.RainGages(sim)[self.RG1].total_precip)
+                    
+                    # Compute control steps
+                    # Wet weather rule
+                    if np.mean(precipitation[-int(self.rainfall_threshold_time/self.report_times_steps):]) > self.rainfall_threshold_value:
+                    # if rainfall < X or upstream basin < X or something else:
+                        if Nodes(sim)[self.sensor1_id].depth > self.sensor1_critical_depth: # Setting start level
+                            Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_True
+                        elif Nodes(sim)[self.sensor1_id].depth < 0.1: # Setting stop level
+                            Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_False
+            
+                    # Dry weather rule
+                    else:
+                        if Nodes(sim)[self.sensor1_id].depth > x: # Parameter to be optimized (self.sensor1_critical_depth_dry):
+                            Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_True_dry
+                        elif Nodes(sim)[self.sensor1_id].depth < 0.1 : # Setting stop level
+                            Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_False_dry
+                    # print('Complete: {:.2f}'.format(sim.percent_complete))
+                
         # Output file is defined
         model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
         if self.CSO_objective == 'volume':
@@ -332,7 +456,7 @@ class Optimizer:
         
     def write_optimal_result(self,result,runtime, config_file):
         # Calculate optimial results
-        opt_setting = result.x[0]
+        opt_setting = result['x'][0]
 
         model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
         if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 

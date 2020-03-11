@@ -158,45 +158,110 @@ class pyswmm_GUI:
 
 #================================================    
 
-# Creatng the content for the simulation tab 
+# =============================================================================
+# # Creatng the content for the simulation tab 
+# =============================================================================
 
+# Radiobuttons for actuator type 
+        Label(self.Simulation_tab, text = "Select the type of the actuator:").grid(row=1,column = 0, sticky = 'W',columnspan = 2)
+        self.orifice_active = Radiobutton(self.Simulation_tab,text = "Orifice",var = self.param.actuator_type,value = 'orifice', command = lambda:GUI_elements.enable_orifice(self))
+        self.orifice_active.grid(row = 2,column = 0,sticky = W,columnspan = 2,pady = 5)
+        self.orifice_active.deselect()
+        self.pump_active = Radiobutton(self.Simulation_tab,text = "Pump",var = self.param.actuator_type,value = 'pump', command = lambda:GUI_elements.enable_pump(self))
+        self.pump_active.grid(row=2,column = 1,sticky = W,columnspan = 2,pady = 5)
+        self.pump_active.select()
+        
+# Dry flow or rainfall threshold
+        Label(self.Simulation_tab, text = 'Rainfall or Dryflow').grid(row = 3,column = 0,sticky = W,columnspan = 2,pady = 5)
+        Label(self.Simulation_tab, text = 'If rainfall exceeds').grid(row = 4,column = 0,sticky = W,columnspan = 1)
+        self.rainfall_threshold = Entry(self.Simulation_tab,width = 10)
+        self.rainfall_threshold.grid(row= 4, column = 1, sticky = W)
+        GUI_elements.create_ToolTip(self.rainfall_threshold,'The average precipitation [mm/hr] over a certain duration that activates the rainfall rule')
+        Label(self.Simulation_tab, text = 'During more than').grid(row = 5,column = 0,sticky = W,columnspan = 1)
+        self.rainfall_time= Entry(self.Simulation_tab,width = 10)
+        self.rainfall_time.grid(row= 5, column = 1, sticky = W)
+        GUI_elements.create_ToolTip(self.rainfall_time,'The duration of the rainfall before the Raifall rule applies. [minutes]')
+        Label(self.Simulation_tab, text = 'Raingage id').grid(row = 6,column = 0,sticky = W,columnspan = 1)
+        self.raingage1 = Entry(self.Simulation_tab,width = 15)
+        self.raingage1.grid(row = 6, column = 1,sticky = W)
+        GUI_elements.create_ToolTip(self.raingage1,'ID of the raingage in the system')
+# RBC frame
+        self.RBC_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Control rules setup')
+        self.RBC_frame.grid(row = 1, column = 4,rowspan = 20, pady =5, padx = 15)
+        # Wet weather rule
+        # self.Rainfall_frame = 
+        Label(self.RBC_frame, text = "Rule applied during rainfall").grid(row=9,column = 0,columnspan = 3)
+        
         # Sensor1
-        Label(self.Simulation_tab, text = "IF depth in").grid(row=10,column = 0, sticky = 'W')
-        self.sensor1id = Entry(self.Simulation_tab,width = 15)
+        Label(self.RBC_frame, text = "IF depth in (Sensor)").grid(row=10,column = 0, sticky = 'W')
+        self.sensor1id = Entry(self.RBC_frame,width = 15)
+        self.sensor1id.bind("<FocusOut>", lambda x: GUI_elements.update(self.sensor1id, self.sensor1id_dry))
         self.sensor1id.grid(row=10, column=1, sticky = 'W')
         GUI_elements.create_ToolTip(self.sensor1id,'Type in the node id of the sensor')
         
-        self.sign = Label(self.Simulation_tab, text = ">")
+        self.sign = Label(self.RBC_frame, text = ">")
         self.sign.grid(row=10,column = 3)
-        GUI_elements.create_ToolTip(self.sign,'This model assumes that the sensor is located downstream of the actuator.')
-        
-        self.sensor1setting = Entry(self.Simulation_tab,width = 10)
+                
+        self.sensor1setting = Entry(self.RBC_frame,width = 10)
         self.sensor1setting.grid(row=10, column=4, sticky = 'W')
         GUI_elements.create_ToolTip(self.sensor1setting,'Type in the depth that activates the actuator [m]')
         
         # Actuator1
-        Label(self.Simulation_tab, text = "THEN Actuator 1").grid(row=11,column = 0, sticky = 'W')
-        self.actuator1id = Entry(self.Simulation_tab,width = 15)
+        Label(self.RBC_frame, text = "THEN Actuator").grid(row=11,column = 0, sticky = 'W')
+        self.actuator1id = Entry(self.RBC_frame,width = 15)
+        self.actuator1id.bind("<FocusOut>", lambda x: GUI_elements.update(self.actuator1id, self.actuator1id_dry))
         self.actuator1id.grid(row=11, column=1, sticky = 'W')
         GUI_elements.create_ToolTip(self.actuator1id,'Type in the id of the actuator')
     
-        Label(self.Simulation_tab, text = "Setting").grid(row=11,column = 3, sticky = 'W')
-        self.actuator1setting_True = Entry(self.Simulation_tab,width = 10)
+        Label(self.RBC_frame, text = "Setting").grid(row=11,column = 3, sticky = 'W')
+        self.actuator1setting_True = Entry(self.RBC_frame,width = 10)
         self.actuator1setting_True.grid(row=11, column=4, sticky = 'W')
         # self.actuator1setting.insert(0,'1')
         GUI_elements.create_ToolTip(self.actuator1setting_True,'Type in the setting of the actuator when critical depth is exceeded')
         
-        Label(self.Simulation_tab, text = "ELSE Actuator 1").grid(row=12,column = 0, sticky = 'W')
-        Label(self.Simulation_tab, text = "Setting").grid(row=12,column = 3, sticky = 'W')
-        self.actuator1setting_False = Entry(self.Simulation_tab,width = 10)
+        Label(self.RBC_frame, text = "ELSE Actuator").grid(row=12,column = 0, sticky = 'W')
+        Label(self.RBC_frame, text = "Setting").grid(row=12,column = 3, sticky = 'W')
+        self.actuator1setting_False = Entry(self.RBC_frame,width = 10)
         self.actuator1setting_False.grid(row=12, column=4, sticky = 'W')
         # self.actuator1setting_False.insert(0,'0')
         GUI_elements.create_ToolTip(self.actuator1setting_False,'Type in the setting of the actuator when critical depth is NOT exceeded')
         
-        Label(self.Simulation_tab, text = "Actuator type:").grid(row=13,column = 0)
-        self.actuator_type = ttk.Combobox(self.Simulation_tab,width = 12,values = ('Orifice', 'Pump')  )
-        self.actuator_type.grid(row=13, column=1)
-        GUI_elements.create_ToolTip(self.actuator_type,'Choose the type of actuator that is in the system.')
+    # Dry weather rule
+        Label(self.RBC_frame, text = "Rule applied during dry weather flow").grid(row=14,column = 0,columnspan = 3)
+
+        Label(self.RBC_frame, text = "IF depth in (Sensor)").grid(row=15,column = 0, sticky = 'W')
+        self.sensor1id_dry = Entry(self.RBC_frame,width = 15)
+        self.sensor1id_dry.bind("<FocusOut>", lambda x: GUI_elements.update(self.sensor1id_dry, self.sensor1id))
+        # self.sensor1id_dry = Label(self.RBC_frame,width = 15)
+        self.sensor1id_dry.grid(row=15, column=1, sticky = 'W')
+        GUI_elements.create_ToolTip(self.sensor1id_dry,'Type in the node id of the sensor')
+                
+        self.sign = Label(self.RBC_frame, text = ">")
+        self.sign.grid(row=15,column = 3)
+                
+        self.sensor1setting_dry = Entry(self.RBC_frame,width = 10)
+        self.sensor1setting_dry.grid(row=15, column=4, sticky = 'W')
+        GUI_elements.create_ToolTip(self.sensor1setting_dry,'Type in the depth that activates the actuator [m]')
+        
+        # Actuator1
+        Label(self.RBC_frame, text = "THEN Actuator").grid(row=16,column = 0, sticky = 'W')
+        self.actuator1id_dry = Entry(self.RBC_frame,width = 15)
+        self.actuator1id_dry.bind("<FocusOut>", lambda x: GUI_elements.update(self.actuator1id_dry, self.actuator1id))
+        self.actuator1id_dry.grid(row=16, column=1, sticky = 'W')
+        GUI_elements.create_ToolTip(self.actuator1id_dry,'Type in the id of the actuator')
+    
+        Label(self.RBC_frame, text = "Setting").grid(row=16,column = 3, sticky = 'W')
+        self.actuator1setting_True_dry = Entry(self.RBC_frame,width = 10)
+        self.actuator1setting_True_dry.grid(row=16, column=4, sticky = 'W')
+        # self.actuator1setting.insert(0,'1')
+        GUI_elements.create_ToolTip(self.actuator1setting_True_dry,'Type in the setting of the actuator when critical depth is exceeded')
+        
+        Label(self.RBC_frame, text = "ELSE Actuator").grid(row=17,column = 0, sticky = 'W')
+        Label(self.RBC_frame, text = "Setting").grid(row=17,column = 3, sticky = 'W')
+        self.actuator1setting_False_dry = Entry(self.RBC_frame,width = 10)
+        self.actuator1setting_False_dry.grid(row=17, column=4, sticky = 'W')
+        # self.actuator1setting_False.insert(0,'0')
+        GUI_elements.create_ToolTip(self.actuator1setting_False_dry,'Type in the setting of the actuator when critical depth is NOT exceeded')
         
 
 
@@ -204,7 +269,7 @@ class pyswmm_GUI:
 
 # Creatng the content for the rain tab 
         
-        Label(self.Rain_tab, text = "Contains a tool for designing rain events that can be imported to the SWMM model                   ", bg = 'white').grid(row=1,column = 1, columnspan = 3, pady  =8)
+        Label(self.Rain_tab, text = "Contains a tool for designing rain events that can be imported to the SWMM model", bg = 'white').grid(row=1,column = 1, columnspan = 3, pady  =8)
 #================================================    
 
 # Creatng the content for the objective tab 
@@ -231,12 +296,9 @@ class pyswmm_GUI:
         GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture")
         GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture")
         
-   
 #================================================    
 
 # Creatng the content for the optimization tab 
-
-
         optimize_check = Checkbutton(self.Optimize_tab, text = "Use optimization", variable = self.param.UseOptimization)
         optimize_check.deselect()
         optimize_check.grid(row = 1, column = 0,sticky = W)
@@ -305,7 +367,7 @@ class pyswmm_GUI:
         self.Cal_downstream.grid(row = 4,column = 2,sticky = W)
         self.Cal_downstream.deselect()
         
-        self.Cal_custom_entry = Entry(self.Calibration_tab,width = 20,state='disabled')
+        self.Cal_custom_entry = Entry(self.Calibration_tab,width = 10,state='disabled')
         self.Cal_custom_entry.grid(row=5, column=3,sticky = W)
         GUI_elements.create_ToolTip(self.Cal_custom_entry,"List the elements where calibration should be done. Seperate by ,")
         

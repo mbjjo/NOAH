@@ -73,7 +73,38 @@ def run(self):
 #    except:
 #        msg.showerror('Error','Not sufficient input to run the model')
   
+# =============================================================================
+    # Define actuator type setting
+def enable_orifice(self):
+    self.sensor1id['state'] = 'normal'
+    self.sensor1setting['state'] = 'normal'
+    self.actuator1id['state'] = 'normal'
+    self.actuator1setting_True['state'] = 'normal'
+    self.actuator1setting_False['state'] = 'normal'
+    self.sensor1id_dry['state'] = 'disabled'
+    self.sensor1setting_dry['state'] = 'disabled'
+    self.actuator1id_dry['state'] = 'disabled'
+    self.actuator1setting_True_dry['state'] = 'disabled'
+    self.actuator1setting_False_dry['state'] = 'disabled'
     
+def enable_pump(self):
+    self.sensor1id['state'] = 'normal'
+    self.sensor1setting['state'] = 'normal'
+    self.actuator1id['state'] = 'normal'
+    self.actuator1setting_True['state'] = 'normal'
+    self.actuator1setting_False['state'] = 'normal'
+    self.sensor1id_dry['state'] = 'normal'
+    self.sensor1setting_dry['state'] = 'normal'
+    self.actuator1id_dry['state'] = 'normal'
+    self.actuator1setting_True_dry['state'] = 'normal'
+    self.actuator1setting_False_dry['state'] = 'normal'
+    
+    
+# #=================================================================== 
+# Update the text of one entry based on another.
+def update(entry_in, entry_out):
+    entry_out.delete(0, END)
+    entry_out.insert(0,entry_in.get())
 
 # #===================================================================     
 
@@ -119,21 +150,29 @@ def write_config(self):
     config = configparser.ConfigParser()
     config['DEFAULT'] = {}
     
-    config['Settings'] = {'System_Units': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.FLOW_UNITS, 
-                          'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP,
-                          'Random_setting': '0'}
+    config['Settings'] = {
+                          'System_Units': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.FLOW_UNITS, 
+                          'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP
+                          }
     config['Model'] = {'Modelname':self.param.model_name.get(),
                        'Modeldirectory':self.param.model_dir.get(),                       
                       'Rain series':''
                       }
     
     
-    config['RuleBasedControl'] = {'sensor1_id':self.sensor1id.get(),
+    config['RuleBasedControl'] = {
+                                  'actuator_type':self.param.actuator_type.get(),
+                                  'sensor1_id':self.sensor1id.get(),
                                   'sensor1_critical_depth':self.sensor1setting.get(),
                                   'actuator1_id':self.actuator1id.get(),
                                   'actuator1_target_setting_True':self.actuator1setting_True.get(),
                                   'actuator1_target_setting_False':self.actuator1setting_False.get(),
-                                  'actuator_type':self.actuator_type.get()
+                                  'sensor1_critical_depth_dryflow':self.sensor1setting_dry.get(),
+                                  'actuator1_target_setting_True_dryflow':self.actuator1setting_True_dry.get(),
+                                  'actuator1_target_setting_False_dryflow':self.actuator1setting_False_dry.get(),
+                                  'raingage1':self.raingage1.get(),
+                                  'rainfall_threshold_value':self.rainfall_threshold.get(),
+                                  'rainfall_threshold_duration':self.rainfall_time.get()
                                   }
     config['Optimization'] = {'UseOptimization':self.param.UseOptimization.get(),
                               'optimization_method':self.opt_method.get(),
@@ -156,7 +195,6 @@ def write_config(self):
 #                              'reduce_CSO':self.param.red_CSO.get(),
 #                              'Stable_Water_Level':self.param.StableWaterLevel.get()
 #                              }
-    
     
     
     # save the file
@@ -182,25 +220,9 @@ class parameters(object):
         self.sim_time.set('LOOONG time')
         
         # Define Control settings in the model 
-        self.Control_tag = StringVar()
-        self.control_weight1 = IntVar()
-        self.control_weight1.set(0)
-        self.control_weight2 = IntVar()
-        self.control_weight2.set(0)
-        self.control_weight3 = IntVar()
-        self.control_weight3.set(0)
-    
-        self.Control_type = IntVar()
-        # Optimization tab
-        self.red_flood = IntVar()
-        self.red_CSO = IntVar()
-        self.StableWaterLevel = IntVar()
+        self.actuator_type = StringVar()
         
-        self.sensors = ''
-        self.target_settings = 0
-        self.actuators = ''
-        self.settings = 0
-        
+        # Optimization
         self.UseOptimization = IntVar()
         self.optimization_method = StringVar()
         self.CSO_objective = StringVar()
@@ -232,6 +254,7 @@ class Results(object):
         
 #        
     
+
 #================================================    
 
 class ToolTip(object):

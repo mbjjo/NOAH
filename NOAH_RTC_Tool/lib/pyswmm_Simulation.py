@@ -11,7 +11,6 @@ NOAH RTC Tool is distributed in the hope that it will be useful, but WITHOUT ANY
 
 You should have received a copy of the GNU General Public License along with NOAH RTC Tool. If not, see <http://www.gnu.org/licenses/>.
 """
-# This is the single simulation
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,7 +21,7 @@ import configparser
 import time
 import os, shutil
 from threading import Thread
-from datetime import datetime
+from datetime import datetime,timedelta
 import swmmtoolbox.swmmtoolbox as swmmtoolbox
 import pyswmm
 from pyswmm import Simulation,Nodes,Links,SystemStats, raingages
@@ -117,6 +116,7 @@ def single_simulation(config_file):
 class Optimizer:
     def __init__(self,config_file):
         starttime = time.time()
+        self.sim_num = 0
         self.read_config(config_file)
         
 #         create folder with the time stamp for the first simulation. All results are stored in this.  
@@ -152,49 +152,53 @@ class Optimizer:
     def read_config(self,config_file):
         config = configparser.ConfigParser()
         config.read('../config/saved_configs/'+config_file)
-        
-        self.system_units = config['Settings']['System_Units']
-        rpt_step_tmp = config['Settings']['Reporting_timesteps']      
-        rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
-        self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
-        self.model_name = config['Model']['modelname']
-        self.model_dir = config['Model']['modeldirectory']
-        
-    #    rain_series = config['Model']['rain_series']
-        
-        RBC = config['RuleBasedControl']
-        self.actuator_type = RBC['actuator_type']
-        self.sensor1_id = RBC['sensor1_id']    
-        self.actuator1_id = RBC['actuator1_id']
-        self.sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
-        self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
-        self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
-        self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
-        self.actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
-        self.actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
-        self.RG1 = RBC['raingage1']
-        self.rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
-        self.rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
-
-        Optimization = config['Optimization']
-        self.useoptimization = int(Optimization['useoptimization'])
-        self.optimization_method = Optimization['optimization_method']
-        self.CSO_objective = Optimization['CSO_objective']
-        self.CSO_id1 = Optimization['CSO_id1']
-        self.CSO_id2 = Optimization['CSO_id2']
-        self.CSO_id3 = Optimization['CSO_id3']
-        self.optimized_parameter = Optimization['optimized_parameter']
-        
-        self.min_expected_Xvalue = int(Optimization['expected_min_xvalue'])
-        self.max_expected_Xvalue = int(Optimization['expected_max_xvalue'])
-        self.max_initial_iterations = int(Optimization['max_iterations_bashop'])
-        self.maxiterations = int(Optimization['max_iterations_per_minimization'])
-#        self.min_expected_Xvalue = float(Optimization['min_expected_Xvalue'])
-#        self.max_expected_Xvalue = float(Optimization['max_expected_Xvalue'])
-##        self.initial_value = float(Optimization['initial_value'])
-#        self.max_iterations_bashop = int(Optimization['max_iterations_bashop'])
-#        self.max_iteration_per_minimization = int(Optimization['max_iteration_per_minimization'])
+        try:
+            self.system_units = config['Settings']['System_Units']
+            rpt_step_tmp = config['Settings']['Reporting_timesteps']      
+            rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
+            self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
+            self.CSO_event_seperation = float(config['Settings']['Time_seperating_CSO_events'])
+            self.CSO_event_duration = float(config['Settings']['Max_CSO_duration'])
+                                              
+            self.model_name = config['Model']['modelname']
+            self.model_dir = config['Model']['modeldirectory']
+            
+        #    rain_series = config['Model']['rain_series']
+            
+            RBC = config['RuleBasedControl']
+            self.actuator_type = RBC['actuator_type']
+            self.sensor1_id = RBC['sensor1_id']    
+            self.actuator1_id = RBC['actuator1_id']
+            self.sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
+            self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
+            self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
+            self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
+            self.actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
+            self.actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
+            self.RG1 = RBC['raingage1']
+            self.rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
+            self.rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
     
+            Optimization = config['Optimization']
+            self.useoptimization = int(Optimization['useoptimization'])
+            self.optimization_method = Optimization['optimization_method']
+            self.CSO_objective = Optimization['CSO_objective']
+            self.CSO_id1 = Optimization['CSO_id1']
+            self.CSO_id2 = Optimization['CSO_id2']
+            self.CSO_id3 = Optimization['CSO_id3']
+            self.optimized_parameter = Optimization['optimized_parameter']
+            self.min_expected_Xvalue = int(Optimization['expected_min_xvalue'])
+            self.max_expected_Xvalue = int(Optimization['expected_max_xvalue'])
+            self.max_initial_iterations = int(Optimization['max_iterations_bashop'])
+            self.maxiterations = int(Optimization['max_iterations_per_minimization'])
+    #        self.min_expected_Xvalue = float(Optimization['min_expected_Xvalue'])
+    #        self.max_expected_Xvalue = float(Optimization['max_expected_Xvalue'])
+    ##        self.initial_value = float(Optimization['initial_value'])
+    #        self.max_iterations_bashop = int(Optimization['max_iterations_bashop'])
+    #        self.max_iteration_per_minimization = int(Optimization['max_iteration_per_minimization'])
+        except ValueError:
+            print('\nWarning: Some fields are left blank or not specified correctly\n')
+            pass
 # Creating a 
     def create_tmp_file(self):
         
@@ -252,7 +256,7 @@ class Optimizer:
         initial_simulation = np.zeros(len(starting_points))
         for i in range(len(starting_points)):
             initial_simulation[i] = self.optimized_simulation(starting_points[i])
-        
+            
         # Save the result to a pickle file
         xy = np.array([starting_points,initial_simulation]).T
 
@@ -273,7 +277,7 @@ class Optimizer:
             print('start_value ' + str(start_value))
             result = optimize.minimize(fun = self.optimized_simulation,
                                   x0 = start_value, method='Nelder-Mead',
-                                  options = {'disp':True,'maxiter':self.maxiterations})
+                                  options = {'disp':True,'maxfev':self.maxiterations})
         else:
             result = {'Only ran the inital simulations. No optimization was performed afterwards.':[],
                       'x': [start_value]}
@@ -314,7 +318,8 @@ class Optimizer:
 
     # optimized parameter is 'Critical depth'
     def optimized_simulation(self, x):
-        
+        self.sim_num += 1 
+        self.sim_start_time = datetime.now()
         if self.actuator_type == 'orifice':
             # Run simulation
             with Simulation(self.model_dir +'/'+ self.model_name + '.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
@@ -373,7 +378,8 @@ class Optimizer:
                 objective_value = self.count_CSO_events([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
                 print('all cso')
             print(objective_value)
-            
+        self.sim_end_time = datetime.now()    
+        GUI_elements.user_msg(self)
         return objective_value
                     
 #===================================================================     
@@ -394,62 +400,46 @@ class Optimizer:
         #===================================================================     
     
     # Compute CSO frequency 
-       
     def count_CSO_events(self,CSO_ids, model_outfile):
-    # Note that the VSO's are now computed as regular nodes where flooding simulates overflow. 
-    # If CSO's are outlets the 'Flow_lost_flooding' should be changed to 'Total_inflow'
-    
-        # input:
-        # CSO_ids in a list of ids on CSO to be monitored
-        
-    
-        def fill_zero(df,dt,max_length,val):
-            # dt is the time between two CSO events before they are counted as seperate events 
-            # max_lengt is the maximum time allowed for one continous CSO event before it is counted as several events. 
-            import numpy as np
-        
-            for i in range(df.shape[1]): # .shape[1] = the number of columns
-                # np.equal(df.iloc[:, i].values, 0) = gives True if two consecutive number are the same 
-                #  np.concatenate(...) = join sequence and adds 0 at the start and end of the array 
-                iszero = np.concatenate(([0], np.equal(df.iloc[:, i].values, 0).view(np.int8), [0]))
-                
-                
-                absdiff = np.abs(np.diff(iszero))
-                # find where the zeros are located in the dataframe
-                zerorange = np.where(absdiff == 1)[0].reshape(-1, 2) # Contains "dry periods" 
-                
-                 
-                # for loop - writes 1 if the number of consecutive zeros are less than 120 
-                # timesteps (dt). 1 dt is 0.5 seconds 
-                for j in range(len(zerorange)):
-                    if zerorange[j][1] - zerorange[j][0] < dt: # If dry periods are less than dt these are counted. 
-                        df.iloc[zerorange[j][0]:zerorange[j][1], i] = val
-                # Max_lengt is the maximum duration of an overflow. before it is counted several times. 
-                for j in range(0,len(zerorange)-1): 
-                    if zerorange[j+1][0]- zerorange[j][1] > max_length:
-                        df.iloc[zerorange[j][0]:zerorange[j][1], i] = val* (zerorange[j+1][0]- zerorange[j][1])/max_length
-                if df.shape[0] - zerorange[-1][1] > max_length:# last row
-                    df.iloc[zerorange[-1][1]:, i] = val* (df.shape[0] - zerorange[-1][1])/max_length
-        # If all CSO's are to be counted as one id the following line should be changed with one merged time series. 
+        # create the dataframe with the 
+        max_event_length = 1 # day
         df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],'Flow_lost_flooding']))for i in range(len(CSO_ids))),axis = 1)
-        # changing the dataframe to zeroes and ones 
-        onezero = np.sign(df)
+        # df is CMS therefore this are converted to m3/timestep. 
+        df = df*60*self.report_times_steps
         
-        # calling fill_zero function. 1440 is the amount of minutes (24hr) chosen to be the limit between CSO events
-        # Time steps i simualtion are 5 minutes.
-        # if there is less than this time between overflow events these are considered as the same overflow event.
+        # Set all timesteps with flooding to 1
+        CSO_YesNo_df = df.mask(df>0,other = 1)
+        # Time between events is assumed to be 12 hours before they are counted as seperate
+        time_between_events= 12*60/self.report_times_steps
         
-        fill_zero(onezero,dt = 1440/self.report_times_steps,max_length = 1440/self.report_times_steps,val = 1)
-      
-        group_ids = onezero != onezero.shift()
-        CSO_events = onezero[group_ids].sum().sum()
+        # Get df with 1 at every event start 
+        CSO_start_df = CSO_YesNo_df.where(np.logical_and(CSO_YesNo_df>0,CSO_YesNo_df.rolling(int(time_between_events),min_periods=0).sum()==1),other=0)
+        # Get df with 1 at every event stop
+        CSO_stop_df = CSO_YesNo_df.where(np.logical_and(CSO_YesNo_df>0,CSO_YesNo_df.rolling(int(time_between_events),min_periods=0).sum().shift(-(int(time_between_events)-1)).fillna(0)==1),other=0)
         
-        # number of CSO is then max(group_ids)
-        # We add all events together. 
-#        CSO_events = sum([max(group_ids['node_' + str(CSO_ids[i]) + '_Flow_lost_flooding'])for i in range(len(CSO_ids))])
-        
-        return CSO_events
-     
+        # Counter for each CSO structure
+        CSO_event_counter = dict(zip(CSO_ids, np.zeros(len(CSO_ids))))
+        for count,col in enumerate(CSO_start_df.columns):
+            max_dur = timedelta(max_event_length).days
+            start_index = np.where(CSO_start_df[col]==1)[0]
+            stop_index = np.where(CSO_stop_df[col]==1)[0]
+            # The end is added to the stop index if overflow continues until the end of simulation
+            if len(start_index) != len(stop_index):
+                stop_index = np.append(stop_index,len(CSO_start_df)-1)
+            start_time = CSO_start_df.iloc[start_index].index
+            stop_time = CSO_stop_df.iloc[stop_index].index
+            duration = stop_time - start_time
+            # If events are longer than maximum duration then the overflow is counted once for each day it lasts. 
+            for i, dur in enumerate(duration):
+                if dur.days > max_dur:
+                    CSO_event_counter[CSO_ids[count]] += dur.days
+                else:
+                    CSO_event_counter[CSO_ids[count]] += 1
+        # CSO_event_counter contain information for each CSO structure
+        # total_CSO_events contain the total number of CSO's
+        total_CSO_events = sum(CSO_event_counter.values())
+        return total_CSO_events
+
     #===================================================================     
 
 # Writing the optimal results to a text file 
@@ -487,7 +477,7 @@ This will result in a CSO volume from the specified CSO structures of {:.0f} m3 
             config.read('../config/saved_configs/'+config_file)
             config.write(file)
 
-#            config_file = config.read('../../config/saved_configs/'+config_file)
+            config_file = config.read('../../config/saved_configs/'+config_file)
             
             
         

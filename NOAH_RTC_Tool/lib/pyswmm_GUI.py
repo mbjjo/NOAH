@@ -37,7 +37,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import sys
 from datetime import datetime,timedelta
 import configparser
-from threading import Thread
+import threading
 
 # import the necessary modelus from pyswmm
 import pyswmm
@@ -71,11 +71,6 @@ class pyswmm_GUI:
 
         # Widgets are created
         self.create_widgets()
-        
-    def create_Thread(self,method):
-        self.run_thread.start() 
-        self.run_thread = Thread(target = method)
-        # self.run_thread.deamon(True)
         
     def create_widgets(self):
 #================================================        
@@ -123,8 +118,8 @@ class pyswmm_GUI:
         self.Calibration_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.Calibration_tab,text = 'Model Calibration')
         
-#        self.Result_tab = ttk.Frame(self.tabControl)
-#        self.tabControl.add(Result_tab,text = 'Results')
+        self.Result_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.Result_tab,text = 'Results')
         
 #================================================    
     # Define bottom frame  
@@ -144,12 +139,12 @@ class pyswmm_GUI:
 #        Button(self.window, text ='Show results',width = 15, command = lambda:popupresults('Results',GUI_elements.results)).grid(row = 5, column = 3,sticky = W)
         Button(self.window, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 5, column = 3,sticky = W, padx = 5)
 
-        # Write status
-        Label(self.window, text = 'Status:').grid(row = 6,sticky = W)    
-        self.status_var = Label(self.window, textvariable = self.param.status).grid(row = 6,column = 0, sticky = E)
+        # # Write status
+        # Label(self.window, text = 'Status:').grid(row = 6,sticky = W)    
+        # self.status_var = Label(self.window, textvariable = self.param.status).grid(row = 6,column = 0, sticky = E)
                 
-        Label(self.window, text = 'Excpected time of simulation:').grid(row = 6, column = 2, columnspan = 2, sticky = W)
-        # self.sim_time = Label(self.window, textvariable = self.param.sim_time).grid(row = 6,column = 4, sticky = W)
+        # Label(self.window, text = 'Excpected time of simulation:').grid(row = 6, column = 2, columnspan = 2, sticky = W)
+        # # self.sim_time = Label(self.window, textvariable = self.param.sim_time).grid(row = 6,column = 4, sticky = W)
 
         # Define progress bar
 #        self.progress_bar = ttk.Progressbar(self.window,orient = 'horizontal', length = 400, mode = 'determinate')
@@ -269,7 +264,37 @@ class pyswmm_GUI:
 
 # Creatng the content for the rain tab 
         
-        Label(self.Rain_tab, text = "Contains a tool for designing rain events that can be imported to the SWMM model", bg = 'white').grid(row=1,column = 1, columnspan = 3, pady  =8)
+        Label(self.Rain_tab, text = "Contains a tool for designing rain events that can be imported to the SWMM model", bg = 'white').grid(row=0,column = 0, columnspan = 3, pady  =8)
+                
+        self.hotstart_button = Button(self.Rain_tab, text ='Choose hotstart file',width = 15, command = lambda:msg.showerror('','Hotstart is not implemented yet'))
+        self.hotstart_button.grid(row = 2, column = 1,sticky = 'W')
+        GUI_elements.create_ToolTip(self.hotstart_button,"Choose the SWMM model that shoul be used for the simulations")
+        
+        # Define frame 
+        self.Rain_event_frame = ttk.LabelFrame(self.Rain_tab, text = 'Definition of rain event')
+        self.Rain_event_frame.grid(row = 2, column = 0,rowspan = 20, pady =5, padx = 15,sticky = 'W')
+        
+        Label(self.Rain_event_frame, text = "Rain event minimum intensity").grid(row=0,column = 0, sticky = 'W')
+        self.rain_event_intensity = Entry(self.Rain_event_frame,width = 10)
+        self.rain_event_intensity.grid(row=0, column=1, sticky = 'W')
+        # self.rain_event_intensity.insert(0,'1')
+        GUI_elements.create_ToolTip(self.rain_event_intensity ,'Type in the minimum intensity of rain that is counted as an event [Unit]')
+        
+        Label(self.Rain_event_frame, text = "Rain event minimum duration").grid(row=1,column = 0, sticky = 'W')
+        self.rain_event_duration = Entry(self.Rain_event_frame,width = 10)
+        self.rain_event_duration.grid(row=1, column=1, sticky = 'W')
+        # self.rain_event_intensity.insert(0,'1')
+        GUI_elements.create_ToolTip(self.rain_event_duration,'Type in the minimum duration of continous rain that is counted as an event [Unit]')
+        
+        Label(self.Rain_event_frame, text = "More options...").grid(row=2,column = 0, sticky = 'W')
+        # self.rain_event_duration = Entry(self.Rain_event_frame,width = 10)
+        # self.rain_event_duration.grid(row=1, column=1, sticky = 'W')
+        # # self.rain_event_intensity.insert(0,'1')
+        # GUI_elements.create_ToolTip(self.rain_event_duration,'Type in the minimum duration of continous rain that is counted as an event [Unit]')
+        
+        
+        
+
 #================================================    
 
 # Creatng the content for the objective tab 
@@ -296,6 +321,36 @@ class pyswmm_GUI:
         GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture")
         GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture")
         
+        
+        # # Retention time
+        # self.retention_time = Radiobutton(self.Control_tab,text = "Control retention time",var = self.param.CSO_objective,value = 'retention')
+        # self.retention_time.grid(row = 1,column = 2,sticky = W,columnspan = 2)
+        # # self.retention_time.select()
+        
+        # Label(self.Control_tab,text = "In node").grid(row=3,column = 2, columnspan = 1)
+        # self.retention_id1 = Entry(self.Control_tab,width = 15)
+        # self.retention_id1.grid(row = 3,column = 3)
+        # GUI_elements.create_ToolTip(self.retention_id1,"Write the node ID of the storage basin")
+        
+        
+        
+        
+        
+        
+        # CSO Settings frame
+        self.Settings_frame = ttk.LabelFrame(self.Control_tab, text = 'Settings for CSO')
+        self.Settings_frame.grid(row = 10, column = 0,rowspan = 20, pady =5, padx = 15)
+        
+        Label(self.Settings_frame, text = "Time seperation CSO events").grid(row=0,column = 0,sticky = W)
+        self.CSO_event_seperation = Entry(self.Settings_frame,width = 5)
+        self.CSO_event_seperation.grid(row = 0, column = 1,sticky = W)
+        self.CSO_event_seperation.insert(END, '12')
+        GUI_elements.create_ToolTip(self.CSO_event_seperation,"Define the minimum time (hours) seperating two events.")
+        Label(self.Settings_frame, text = "Maximum duration of CSO event").grid(row=1,column = 0)
+        self.CSO_event_duration = Entry(self.Settings_frame,width = 5)
+        self.CSO_event_duration.grid(row = 1, column = 1,sticky = W)
+        self.CSO_event_duration.insert(END, '24')
+        GUI_elements.create_ToolTip(self.CSO_event_duration,"Define the time (hours) before an event is counted as more events.")
 #================================================    
 
 # Creatng the content for the optimization tab 
@@ -394,10 +449,50 @@ class pyswmm_GUI:
         self.Auto_calibration = Button(self.Calibration_tab, text ='Automatic calibration', width = 20, command = lambda:msg.showerror('','Automatic calibration is not possible'))
         self.Auto_calibration.grid(row = 8, column = 2,sticky = W, padx = 5,columnspan = 2)
         # GUI_elements.create_ToolTip(self.Auto_calibration ,"Write the current RTC setup (specified in the simulation tab) to a SWMM file.")
-    
+     
+# =============================================================================
+        # Content for the results tab
+        
+        # Parameters for comparison: 
+        self.Result_parameter_frame = ttk.LabelFrame(self.Result_tab, text = 'Parameters for comparison')
+        self.Result_parameter_frame.grid(row = 1, column = 0,rowspan = 5, columnspan  =5, pady =5, padx = 15)
+        
+        self.result_CSO_vol = Checkbutton(self.Result_parameter_frame, text = "Compare CSO volumne", variable = self.param.results_vol)
+        self.result_CSO_vol.grid(row=0, column=0, sticky = 'W')
+        self.result_CSO_vol.deselect()
+        
+        self.result_CSO_vol_id_obj_fun = Radiobutton(self.Result_parameter_frame, text = "Same nodes as in objective function", var = self.param.results_CSO_vol_id, value = 'objective_function')
+        self.result_CSO_vol_id_obj_fun.grid(row = 0, column = 1, sticky = 'W')
+        self.result_CSO_vol_id_obj_fun.select()
+        
+        self.result_CSO_vol_id_custom = Radiobutton(self.Result_parameter_frame, text = "Custom nodes", var = self.param.results_CSO_vol_id, value = 'new_nodes')
+        self.result_CSO_vol_id_custom.grid(row = 0, column = 2, sticky = 'W')
+        self.result_CSO_vol_id_custom.deselect()
+        
+        self.result_CSO_freq = Checkbutton(self.Result_parameter_frame, text = "Compare number of CSO events", variable = self.param.results_freq)
+        self.result_CSO_freq.grid(row=1, column=0, sticky = 'W')
+        self.result_CSO_freq.deselect()
+        
+        Label(self.Result_parameter_frame, text = "More options...").grid(row=4,column = 0, sticky = 'W')
         
         
-    
+        # Benchmark for comparison:
+        self.Benchmark_model = Radiobutton(self.Result_tab, text = "Compute new benchmark model", var = self.param.Benchmark_model, value = 'new')
+        self.Benchmark_model.select()
+        self.Benchmark_model.grid(row = 9, column = 0,sticky = W)
+        GUI_elements.create_ToolTip(self.Benchmark_model,"Select if a benchmark simulation is needed for comparison of the results with and without RTC.")
+        
+        self.Benchmark_model_existing = Radiobutton(self.Result_tab, text = "Compute new benchmark model", var = self.param.Benchmark_model, value = 'existing')
+        self.Benchmark_model_existing.deselect()
+        self.Benchmark_model_existing.grid(row = 9, column = 1,sticky = W)
+        GUI_elements.create_ToolTip(self.Benchmark_model_existing,"Select if a benchmark simulation already exists for comparison of the results with and without RTC.")
+        
+        self.Benchmark_model_file = Button(self.Result_tab, text ='Select output file for comparison', width = 30, command = lambda:msg.showerror('','Not implemented'))
+        self.Benchmark_model_file.grid(row = 10, column = 1 ,sticky = W, padx = 5,columnspan = 2)
+        GUI_elements.create_ToolTip(self.Benchmark_model_file,"Choose an output file from an already run SWMM model for comparison.")
+        
+        
+        
 # =============================================================================
         
         

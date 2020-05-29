@@ -1,0 +1,59 @@
+This is the file with the optimization results from NOAH RTC Tool optimization. 
+
+The model used is BellingeSWMM_MU_v017a_pumptest
+
+Total time of computation is 118.6080212632815 minutes
+
+The best setting of the RTC setup is 0.00.
+This will result in a CSO volume from the specified CSO structures of 0 m3 and 3.0 CSO events 
+
+
+Optimization output: 
+ final_simplex: (array([[0.00e+00],
+       [6.25e-05]]), array([0., 0.]))
+           fun: 0.0
+       message: 'Optimization terminated successfully.'
+          nfev: 8
+           nit: 3
+        status: 0
+       success: True
+             x: array([0.])
+
+The used config file is 
+
+[Settings]
+system_units = CMS
+reporting_timesteps = 00:01:00
+
+[Model]
+modelname = BellingeSWMM_MU_v017a_pumptest
+modeldirectory = N:/NOAH_calc4/models
+rain series = 
+
+[RuleBasedControl]
+actuator_type = pump
+sensor1_id = G80F13P
+sensor1_critical_depth = 3
+actuator1_id = G80F13Pp1
+actuator1_target_setting_true = 1
+actuator1_target_setting_false = 0
+sensor1_critical_depth_dryflow = 0.8
+actuator1_target_setting_true_dryflow = 1
+actuator1_target_setting_false_dryflow = 0
+raingage1 = rg5425
+rainfall_threshold_value = 10
+rainfall_threshold_duration = 30
+
+[Optimization]
+useoptimization = 1
+optimization_method = Nelder-Mead
+cso_objective = volume
+cso_id1 = G80F13P
+cso_id2 = G80F240
+cso_id3 = G80F11B
+optimized_parameter = 
+expected_min_xvalue = 0
+expected_max_xvalue = 5
+max_iterations_bashop = 10
+max_iterations_per_minimization = 4
+

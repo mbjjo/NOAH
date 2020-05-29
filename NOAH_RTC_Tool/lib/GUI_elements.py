@@ -22,6 +22,7 @@ from scipy import optimize,integrate
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import sys
+import threading
 from datetime import datetime,timedelta
 import configparser
 from configparser import ConfigParser
@@ -42,6 +43,11 @@ from tkintertable.TableModels import TableModel
 
 
 #===================================================================     
+# Define function that initializes a new thread
+def new_thread(threaded_function, kwargs_dir = None):
+    ThreadObj = threading.Thread(target = threaded_function, kwargs = kwargs_dir)
+    ThreadObj.start()
+    
 
     # Define run function
 def run(self):
@@ -49,8 +55,8 @@ def run(self):
     if self.param.Overwrite_config.get() == 1:
         write_config(self) # Writes configuration file 
     
+    msg.showinfo('','Running simulation \nSee run status in console window')
     config_file = self.param.model_name.get() + '.ini'
-    
     self.param.status.set('Running simulation')
     if self.param.UseOptimization.get() == 0:
         pyswmm_Simulation.single_simulation(config_file)
@@ -152,7 +158,9 @@ def write_config(self):
     
     config['Settings'] = {
                           'System_Units': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.FLOW_UNITS, 
-                          'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP
+                          'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP,
+                          'Time_seperating_CSO_events':self.CSO_event_seperation.get(),
+                          'Max_CSO_duration':self.CSO_event_duration.get()
                           }
     config['Model'] = {'Modelname':self.param.model_name.get(),
                        'Modeldirectory':self.param.model_dir.get(),                       
@@ -238,6 +246,10 @@ class parameters(object):
         
         
         # # Results
+        self.Benchmark_model = IntVar()
+        self.results_vol = IntVar()
+        self.results_CSO_vol_id = StringVar()
+        self.results_freq = IntVar()
         self.results = {}       
         
         self.optimal_setting = {}
@@ -254,6 +266,15 @@ class Results(object):
         
 #        
     
+
+#================================================    
+# def feedback_msg_console():
+#     msg = """ 
+# Ran one simulation\n
+    
+# """"
+#     print(msg)
+
 
 #================================================    
 
@@ -308,7 +329,6 @@ def disableEntry():
  
 #===================================================================     
 #===================================================================     
-      
     
 # functions for the GUI buttons
 
@@ -516,6 +536,31 @@ class StartUp_window(object):
         B4 = ttk.Button(tframe, text="Quit", command = self.StartUp_window.destroy).grid(row = 1,column = 3, sticky = E)
         self.StartUp_window.mainloop()
 #===================================================================    
+        
+#%%
+
+# User message:
+def user_msg(self):
+    msg = """
+Clompleted simulation {} of {}.
+Time of simulation is {}.
+Expected time of completion is {}.
+"""
+    # sim_num  = 1
+    # total_sim =100
+    # sim_time = end - start
+        
+    sim_num = self.sim_num
+    total_sim = self.max_initial_iterations + self.maxiterations
+    sim_time = self.sim_end_time - self.sim_start_time
+    Complete_time = datetime.now() + sim_time*int((total_sim-sim_num))
+    print(msg.format(sim_num,total_sim,sim_time,Complete_time.strftime("%H:%M")))
+
+#%%
+#===================================================================    
+
+
+
 
 def Results_table(title, msg):
   

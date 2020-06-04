@@ -67,7 +67,7 @@ class pyswmm_GUI:
         self.param = GUI_elements.parameters()
         
         # Creates variables for storing output results 
-        self.res = GUI_elements.Results()
+        # self.res = GUI_elements.Results()
 
         # Widgets are created
         self.create_widgets()
@@ -292,8 +292,6 @@ class pyswmm_GUI:
         # # self.rain_event_intensity.insert(0,'1')
         # GUI_elements.create_ToolTip(self.rain_event_duration,'Type in the minimum duration of continous rain that is counted as an event [Unit]')
         
-        
-        
 
 #================================================    
 
@@ -335,8 +333,6 @@ class pyswmm_GUI:
         
         
         
-        
-        
         # CSO Settings frame
         self.Settings_frame = ttk.LabelFrame(self.Control_tab, text = 'Settings for CSO')
         self.Settings_frame.grid(row = 10, column = 0,rowspan = 20, pady =5, padx = 15)
@@ -361,37 +357,55 @@ class pyswmm_GUI:
         
         Label(self.Optimize_tab, text = "Choose optimization parameters").grid(row=2,column = 0, columnspan = 3, pady  =8)
          
-        Label(self.Optimize_tab, text = "Optimization method").grid(row=3,column = 0)
-        self.opt_method = ttk.Combobox(self.Optimize_tab,width = 20,values = ('Nelder-Mead')  )
+        Label(self.Optimize_tab, text = "Optimization method").grid(row=3,column = 0,sticky='E')
+        self.opt_method = ttk.Combobox(self.Optimize_tab,width = 20,values = ('Two-step-optimization'),state = 'readonly')
         self.opt_method.grid(row=3, column=1)
         
-        Label(self.Optimize_tab, text = "Parameter to be optimized").grid(row=4,column = 0)
-        self.optimized_parameter= ttk.Combobox(self.Optimize_tab,width = 20,values = ('Critical_depth')  )
+        Label(self.Optimize_tab, text = "Parameter to be optimized").grid(row=4,column = 0,sticky='E')
+        self.optimized_parameter= ttk.Combobox(self.Optimize_tab,width = 20,values = ('Activation depth','Sensor location', 'Sensor location and activation depth'),state = 'readonly')
+        self.optimized_parameter.bind("<<ComboboxSelected>>",lambda x: GUI_elements.enable_sensor_location(self))
         self.optimized_parameter.grid(row=4, column=1)
         
 #        Label(self.Optimize_tab, text = "Initial value").grid(row=4,column = 0)
 #        self.initial_value = Entry(self.Optimize_tab,width = 10)
 #        self.initial_value.grid(row=4, column=1,sticky = W)
 
-        Label(self.Optimize_tab, text = "Minimum value of parameter range").grid(row=5,column = 0)
+        Label(self.Optimize_tab, text = "Minimum value of parameter range").grid(row=5,column = 0,sticky='E')
         self.expected_min_Xvalue = Entry(self.Optimize_tab,width = 5)
         self.expected_min_Xvalue.grid(row=5, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.expected_min_Xvalue,"Specify the minimum value of the parameter range. The optimizer will not find a value below this point. ")
         
-        Label(self.Optimize_tab, text = "Maximum value of parameter range").grid(row=6,column = 0)
+        Label(self.Optimize_tab, text = "Maximum value of parameter range").grid(row=6,column = 0,sticky='E')
         self.expected_max_Xvalue = Entry(self.Optimize_tab,width = 5)
         self.expected_max_Xvalue.grid(row=6, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.expected_max_Xvalue,"Specify the maximum value of the parameter range. The optimizer will not find a value above this point. ")
         
-        Label(self.Optimize_tab, text = "Number of initial simulations").grid(row=7,column = 0)
+        Label(self.Optimize_tab, text = "Number of initial simulations").grid(row=7,column = 0,sticky='E')
         self.max_iterations_bashop = Entry(self.Optimize_tab,width = 5)
         self.max_iterations_bashop.grid(row=7, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.max_iterations_bashop,"Specify the number of simulations that are done in the initial round of simulations")
         
-        Label(self.Optimize_tab, text = "Maximum number of iterations for minimization").grid(row=8,column = 0)
+        Label(self.Optimize_tab, text = "Maximum number of iterations for minimization").grid(row=8,column = 0,sticky='E')
         self.max_iterations_per_minimization = Entry(self.Optimize_tab,width = 5)
         self.max_iterations_per_minimization.grid(row=8, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.max_iterations_per_minimization,"Specify the maximum allowed number of simulations for the optimization simulations")
+        
+         # Sensor location frame
+        self.sensor_loc_frame = ttk.LabelFrame(self.Optimize_tab, text = 'Possible sensor locations')
+        self.sensor_loc_frame.grid(row =0, column = 2,rowspan = 20, pady =5, padx = 5)
+        
+        Label(self.sensor_loc_frame, text = "Select possible sensor locations").grid(row=0,column = 0,sticky = W)
+        self.sensor_loc1 = Entry(self.sensor_loc_frame,width = 15)
+        self.sensor_loc1.grid(row = 1, column = 0,sticky = W)
+        self.sensor_loc2 = Entry(self.sensor_loc_frame,width = 15)
+        self.sensor_loc2.grid(row = 2, column = 0,sticky = W)
+        self.sensor_loc3 = Entry(self.sensor_loc_frame,width = 15)
+        self.sensor_loc3.grid(row = 3, column = 0,sticky = W)
+        GUI_elements.create_ToolTip(self.sensor_loc_frame,"Define the ID of nodes with possibility of a sensor.")
+        # self.sensor_loc1.insert(END,self.sensor1id.get())
+        
+        
+        
         
         
 # =============================================================================

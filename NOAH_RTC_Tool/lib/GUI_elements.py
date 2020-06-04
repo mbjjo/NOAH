@@ -44,11 +44,11 @@ from tkintertable.TableModels import TableModel
 
 #===================================================================     
 # Define function that initializes a new thread
-def new_thread(threaded_function, kwargs_dir = None):
-    ThreadObj = threading.Thread(target = threaded_function, kwargs = kwargs_dir)
-    ThreadObj.start()
+# def new_thread(threaded_function, kwargs_dir = None):
+#     ThreadObj = threading.Thread(target = threaded_function, kwargs = kwargs_dir)
+#     ThreadObj.start()
     
-
+#===================================================================     
     # Define run function
 def run(self):
     
@@ -79,39 +79,6 @@ def run(self):
 #    except:
 #        msg.showerror('Error','Not sufficient input to run the model')
   
-# =============================================================================
-    # Define actuator type setting
-def enable_orifice(self):
-    self.sensor1id['state'] = 'normal'
-    self.sensor1setting['state'] = 'normal'
-    self.actuator1id['state'] = 'normal'
-    self.actuator1setting_True['state'] = 'normal'
-    self.actuator1setting_False['state'] = 'normal'
-    self.sensor1id_dry['state'] = 'disabled'
-    self.sensor1setting_dry['state'] = 'disabled'
-    self.actuator1id_dry['state'] = 'disabled'
-    self.actuator1setting_True_dry['state'] = 'disabled'
-    self.actuator1setting_False_dry['state'] = 'disabled'
-    
-def enable_pump(self):
-    self.sensor1id['state'] = 'normal'
-    self.sensor1setting['state'] = 'normal'
-    self.actuator1id['state'] = 'normal'
-    self.actuator1setting_True['state'] = 'normal'
-    self.actuator1setting_False['state'] = 'normal'
-    self.sensor1id_dry['state'] = 'normal'
-    self.sensor1setting_dry['state'] = 'normal'
-    self.actuator1id_dry['state'] = 'normal'
-    self.actuator1setting_True_dry['state'] = 'normal'
-    self.actuator1setting_False_dry['state'] = 'normal'
-    
-    
-# #=================================================================== 
-# Update the text of one entry based on another.
-def update(entry_in, entry_out):
-    entry_out.delete(0, END)
-    entry_out.insert(0,entry_in.get())
-
 # #===================================================================     
 
 #     # Define run function
@@ -178,9 +145,9 @@ def write_config(self):
                                   'sensor1_critical_depth_dryflow':self.sensor1setting_dry.get(),
                                   'actuator1_target_setting_True_dryflow':self.actuator1setting_True_dry.get(),
                                   'actuator1_target_setting_False_dryflow':self.actuator1setting_False_dry.get(),
-                                  'raingage1':self.raingage1.get(),
-                                  'rainfall_threshold_value':self.rainfall_threshold.get(),
-                                  'rainfall_threshold_duration':self.rainfall_time.get()
+                                   'raingage1':self.raingage1.get(),
+                                   'rainfall_threshold_value':self.rainfall_threshold.get(),
+                                   'rainfall_threshold_duration':self.rainfall_time.get()
                                   }
     config['Optimization'] = {'UseOptimization':self.param.UseOptimization.get(),
                               'optimization_method':self.opt_method.get(),
@@ -257,12 +224,12 @@ class parameters(object):
     
 #================================================    
         
-class Results(object):        
-    def __init__(self):
-        self.optimization_results = StringVar()
-        self.optimal_setting = DoubleVar()
-        self.volume_at_optimum = DoubleVar()
-        self.CSO_events_at_optimum = DoubleVar()
+# class Results(object): # not used        
+#     def __init__(self):
+#         self.optimization_results = StringVar()
+#         self.optimal_setting = DoubleVar()
+#         self.volume_at_optimum = DoubleVar()
+#         self.CSO_events_at_optimum = DoubleVar()
         
 #        
     
@@ -319,6 +286,51 @@ def create_ToolTip(widget, text):
     
 
 #===================================================================     
+
+# =============================================================================
+# Small functions
+# =============================================================================
+    # Define actuator type setting
+def enable_orifice(self):
+    self.sensor1id['state'] = 'normal'
+    self.sensor1setting['state'] = 'normal'
+    self.actuator1id['state'] = 'normal'
+    self.actuator1setting_True['state'] = 'normal'
+    self.actuator1setting_False['state'] = 'normal'
+    self.sensor1id_dry['state'] = 'disabled'
+    self.sensor1setting_dry['state'] = 'disabled'
+    self.actuator1id_dry['state'] = 'disabled'
+    self.actuator1setting_True_dry['state'] = 'disabled'
+    self.actuator1setting_False_dry['state'] = 'disabled'
+    
+def enable_pump(self):
+    self.sensor1id['state'] = 'normal'
+    self.sensor1setting['state'] = 'normal'
+    self.actuator1id['state'] = 'normal'
+    self.actuator1setting_True['state'] = 'normal'
+    self.actuator1setting_False['state'] = 'normal'
+    self.sensor1id_dry['state'] = 'normal'
+    self.sensor1setting_dry['state'] = 'normal'
+    self.actuator1id_dry['state'] = 'normal'
+    self.actuator1setting_True_dry['state'] = 'normal'
+    self.actuator1setting_False_dry['state'] = 'normal'
+
+def enable_sensor_location(self):
+    if self.optimized_parameter.get() == 'Sensor location' or self.optimized_parameter.get() == 'Sensor location and activation depth':
+        self.sensor_loc1['state'] = 'normal'
+        self.sensor_loc2['state'] = 'normal'
+        self.sensor_loc3['state'] = 'normal'
+    elif self.optimized_parameter.get() == 'Activation depth':
+        self.sensor_loc1['state'] = 'disabled'
+        self.sensor_loc2['state'] = 'disabled'
+        self.sensor_loc3['state'] = 'disabled'
+    
+# Update the text of one entry based on another.
+def update(entry_in, entry_out):
+    entry_out.delete(0, END)
+    entry_out.insert(0,entry_in.get())
+
+
 def enableEntry(entry):
     entry.configure(state='normal')
     entry.update()

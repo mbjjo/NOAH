@@ -152,53 +152,73 @@ class Optimizer:
     def read_config(self,config_file):
         config = configparser.ConfigParser()
         config.read('../config/saved_configs/'+config_file)
+        # try except are only applied on float() lines. This ensures that these can be left blank. 
+        # If they are needed in the simulation an error will occur at that point
+        self.system_units = config['Settings']['System_Units']
+        rpt_step_tmp = config['Settings']['Reporting_timesteps']      
+        rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
+        self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
         try:
-            self.system_units = config['Settings']['System_Units']
-            rpt_step_tmp = config['Settings']['Reporting_timesteps']      
-            rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
-            self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
             self.CSO_event_seperation = float(config['Settings']['Time_seperating_CSO_events'])
+        except ValueError:
+            # print('\nWarning: Some fields are left blank or not specified correctly\n')
+            pass
+        try:
             self.CSO_event_duration = float(config['Settings']['Max_CSO_duration'])
-                                              
-            self.model_name = config['Model']['modelname']
-            self.model_dir = config['Model']['modeldirectory']
+        except ValueError:
+            pass
+        self.model_name = config['Model']['modelname']
+        self.model_dir = config['Model']['modeldirectory']
             
         #    rain_series = config['Model']['rain_series']
             
-            RBC = config['RuleBasedControl']
-            self.actuator_type = RBC['actuator_type']
-            self.sensor1_id = RBC['sensor1_id']    
-            self.actuator1_id = RBC['actuator1_id']
-            self.sensor1_critical_depth = float(RBC['sensor1_critical_depth'])
+        RBC = config['RuleBasedControl']
+        self.actuator_type = RBC['actuator_type']
+        self.sensor1_id = RBC['sensor1_id']    
+        self.actuator1_id = RBC['actuator1_id']
+        try:
+            self.sensor1_critical_depth = float(RBC['sensor1_critical_depth']) # It could make sense to leave this blank
             self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
             self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
+        except ValueError:
+            print('Parameters for the rule based control are not specified correctly or left blank.')    
+            pass
+        try:
             self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
             self.actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
             self.actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
-            self.RG1 = RBC['raingage1']
+        except ValueError:
+            # print('Parameters for the rule based control are not specified correctly.')    
+            pass
+        self.RG1 = RBC['raingage1']
+        try:
             self.rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
             self.rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
-    
-            Optimization = config['Optimization']
-            self.useoptimization = int(Optimization['useoptimization'])
-            self.optimization_method = Optimization['optimization_method']
-            self.CSO_objective = Optimization['CSO_objective']
-            self.CSO_id1 = Optimization['CSO_id1']
-            self.CSO_id2 = Optimization['CSO_id2']
-            self.CSO_id3 = Optimization['CSO_id3']
-            self.optimized_parameter = Optimization['optimized_parameter']
+        except ValueError:
+            pass
+        
+        Optimization = config['Optimization']
+        self.useoptimization = int(Optimization['useoptimization'])
+        self.optimization_method = Optimization['optimization_method']
+        self.CSO_objective = Optimization['CSO_objective']
+        self.CSO_id1 = Optimization['CSO_id1']
+        self.CSO_id2 = Optimization['CSO_id2']
+        self.CSO_id3 = Optimization['CSO_id3']
+        self.optimized_parameter = Optimization['optimized_parameter']
+        try:
             self.min_expected_Xvalue = int(Optimization['expected_min_xvalue'])
             self.max_expected_Xvalue = int(Optimization['expected_max_xvalue'])
             self.max_initial_iterations = int(Optimization['max_iterations_bashop'])
             self.maxiterations = int(Optimization['max_iterations_per_minimization'])
+        except ValueError:
+            print('Optimization parameters are not specified correctly or left blank.')
+            pass
+        
     #        self.min_expected_Xvalue = float(Optimization['min_expected_Xvalue'])
     #        self.max_expected_Xvalue = float(Optimization['max_expected_Xvalue'])
     ##        self.initial_value = float(Optimization['initial_value'])
     #        self.max_iterations_bashop = int(Optimization['max_iterations_bashop'])
     #        self.max_iteration_per_minimization = int(Optimization['max_iteration_per_minimization'])
-        except ValueError:
-            print('\nWarning: Some fields are left blank or not specified correctly\n')
-            pass
 # Creating a 
     def create_tmp_file(self):
         
@@ -250,7 +270,7 @@ class Optimizer:
         
         
     def Two_step_optimizer(self):
-       
+        
         # First step init: determine starting point from sequencial simulations
         starting_points = np.arange(self.min_expected_Xvalue,self.max_expected_Xvalue,(self.max_expected_Xvalue-self.min_expected_Xvalue)/self.max_initial_iterations)
         initial_simulation = np.zeros(len(starting_points))

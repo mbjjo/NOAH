@@ -43,13 +43,7 @@ from tkintertable.TableModels import TableModel
 
 
 #===================================================================     
-# Define function that initializes a new thread
-# def new_thread(threaded_function, kwargs_dir = None):
-#     ThreadObj = threading.Thread(target = threaded_function, kwargs = kwargs_dir)
-#     ThreadObj.start()
-    
-#===================================================================     
-    # Define run function
+# Define run function
 def run(self):
     
     if self.param.Overwrite_config.get() == 1:
@@ -57,67 +51,19 @@ def run(self):
     
     msg.showinfo('','Running simulation \nSee run status in console window')
     config_file = self.param.model_name.get() + '.ini'
-    self.param.status.set('Running simulation')
     if self.param.UseOptimization.get() == 0:
         pyswmm_Simulation.single_simulation(config_file)
         msg.showinfo('','Ran one simulation')
         results_text = ''
         
     elif self.param.UseOptimization.get() == 1:
-        self.param.status.set('Running optimization')
         pyswmm_Simulation.Optimizer(config_file)
         msg.showinfo('','Found optimal RTC setup\nSee file optimized_results.txt in the \output folder with the latest time for the results.')
         results_text = 'See file optimized_results.txt in the \output folder with the latest time for the results.'
-#        GUI_elements.Results_text('Run complete',results_text)
-#        GUI_elements.Results_plot()
-#        self.progress_bar.start()
-        # generate_SWMM_file(self) # Works but not used 
-    self.param.status.set('Run Complete')
-    
-#        print('Run complete')
-    #     exec(open('SimpelSimulation.py').read())
-#    except:
-#        msg.showerror('Error','Not sufficient input to run the model')
-  
-# #===================================================================     
+        # generate_SWMM_file(self) # Does not work 
 
-#     # Define run function
-# def run(self):
-    
-#     if self.param.Overwrite_config.get() == 1:
-#         GUI_elements.write_config(self) # Writes configuration file 
-    
-#     config_file = self.param.model_name.get() + '.ini'
-    
-#     if self.param.UseOptimization.get() == 0:
-#         self.create_Thread(pyswmm_Simulation.single_simulation(config_file))
-#         self.param.status.set('Running simulation')
-#         # pyswmm_Simulation.single_simulation(config_file)
-#         msg.showinfo('','Ran one simulation')
-#         results_text = ''
-        
-#     elif self.param.UseOptimization.get() == 1:
-        
-#         self.param.status.set('Running optimization')
-#         pyswmm_Simulation.Optimizer(config_file)
-#         msg.showinfo('','Found optimal RTC setup\nSee file optimized_results.txt in the \output folder with the latest time for the results.')
-#         # results_text = 'See file optimized_results.txt in the \output folder with the latest time for the results.'
-# #        GUI_elements.Results_text('Run complete',results_text)
-# #        GUI_elements.Results_plot()
-# #        self.progress_bar.start()
-#     self.param.status.set('Run Complete')
-    
-# #        print('Run complete')
-#     #     exec(open('SimpelSimulation.py').read())
-# #    except:
-# #        msg.showerror('Error','Not sufficient input to run the model')
-  
 # # =============================================================================
-
-#     
-# =============================================================================
-#================================================         
-        
+# Write input from GUI to configuration file        
 def write_config(self):
     
     config = configparser.ConfigParser()
@@ -129,11 +75,11 @@ def write_config(self):
                           'Time_seperating_CSO_events':self.CSO_event_seperation.get(),
                           'Max_CSO_duration':self.CSO_event_duration.get()
                           }
+    
     config['Model'] = {'Modelname':self.param.model_name.get(),
                        'Modeldirectory':self.param.model_dir.get(),                       
                       'Rain series':''
                       }
-    
     
     config['RuleBasedControl'] = {
                                   'actuator_type':self.param.actuator_type.get(),
@@ -149,35 +95,24 @@ def write_config(self):
                                    'rainfall_threshold_value':self.rainfall_threshold.get(),
                                    'rainfall_threshold_duration':self.rainfall_time.get()
                                   }
+    
     config['Optimization'] = {'UseOptimization':self.param.UseOptimization.get(),
                               'optimization_method':self.opt_method.get(),
                               'CSO_objective':self.param.CSO_objective.get(),
                               'CSO_id1':self.CSO_id1.get(),
                               'CSO_id2':self.CSO_id2.get(),
                               'CSO_id3':self.CSO_id3.get(),
-                              'Optimized_parameter':self.param.optimized_parameter.get(),
-
+                              'Optimized_parameter':self.optimized_parameter.get(),
                               'expected_min_Xvalue':self.expected_min_Xvalue.get(),
                               'expected_max_Xvalue':self.expected_max_Xvalue.get(),
-#                              'Initial_value':self.initial_value.get(),
-#                              'stepsize':
                               'max_iterations_bashop':self.max_iterations_bashop.get(),
-                              'max_iterations_per_minimization':self.max_iterations_per_minimization.get()
-                              
-                              }
-
-#                              'reduce_flood':self.param.red_flood.get(),
-#                              'reduce_CSO':self.param.red_CSO.get(),
-#                              'Stable_Water_Level':self.param.StableWaterLevel.get()
-#                              }
-    
+                              'max_iterations_per_minimization':self.max_iterations_per_minimization.get()                              
+                              }    
     
     # save the file
     config_name = self.param.model_name.get()
-    
     config_path = '../config/saved_configs/'
     with open(config_path + config_name + '.ini','w') as configfile: 
-#              '../../config/saved_configs/example.ini','w') as configfile:
         config.write(configfile)
     msg.showinfo('','Saved to configuration file')
 #===================================================================    
@@ -185,66 +120,27 @@ def write_config(self):
 class parameters(object):
     def __init__(self):
         
-        # Define model
         self.model_name = StringVar()
         self.model_dir = StringVar()
         self.Overwrite_config = IntVar()
-        self.status = StringVar()
-        self.status.set('Ready')
-        self.sim_time = StringVar()
-        self.sim_time.set('LOOONG time')
         
-        # Define Control settings in the model 
+        # RTC settings
         self.actuator_type = StringVar()
         
         # Optimization
         self.UseOptimization = IntVar()
-        self.optimization_method = StringVar()
         self.CSO_objective = StringVar()
-        self.CSO_id1 = StringVar()
-        self.CSO_id2 = StringVar()
-        self.CSO_id3 = StringVar()
-        self.optimized_parameter = StringVar()
-        self.min_expected_Xvalue = IntVar()
-        self.max_expected_Xvalue = IntVar()
-        self.max_iterations_bashop = IntVar()
-        self.max_iterations_per_minimization = IntVar()
-        
-        
-        
-        # # Results
+       
+        # Results
         self.Benchmark_model = IntVar()
         self.results_vol = IntVar()
         self.results_CSO_vol_id = StringVar()
         self.results_freq = IntVar()
         self.results = {}       
-        
         self.optimal_setting = {}
         
-    
-#================================================    
-        
-# class Results(object): # not used        
-#     def __init__(self):
-#         self.optimization_results = StringVar()
-#         self.optimal_setting = DoubleVar()
-#         self.volume_at_optimum = DoubleVar()
-#         self.CSO_events_at_optimum = DoubleVar()
-        
-#        
-    
-
-#================================================    
-# def feedback_msg_console():
-#     msg = """ 
-# Ran one simulation\n
-    
-# """"
-#     print(msg)
-
-
-#================================================    
-
+# =============================================================================
+# Tooltip
 class ToolTip(object):
     def __init__(self, widget):
         self.widget = widget
@@ -272,9 +168,8 @@ class ToolTip(object):
         self.tip_window = None
         if tw:
             tw.destroy()
-            
-#===================================================================          
 
+# Tooltip function            
 def create_ToolTip(widget, text):
     toolTip = ToolTip(widget)       # create instance of class
     def enter(event):
@@ -284,37 +179,23 @@ def create_ToolTip(widget, text):
     widget.bind('<Enter>', enter)   # bind mouse events
     widget.bind('<Leave>', leave)
     
-
-#===================================================================     
-
 # =============================================================================
 # Small functions
 # =============================================================================
-    # Define actuator type setting
-def enable_orifice(self):
-    self.sensor1id['state'] = 'normal'
-    self.sensor1setting['state'] = 'normal'
-    self.actuator1id['state'] = 'normal'
-    self.actuator1setting_True['state'] = 'normal'
-    self.actuator1setting_False['state'] = 'normal'
-    self.sensor1id_dry['state'] = 'disabled'
-    self.sensor1setting_dry['state'] = 'disabled'
-    self.actuator1id_dry['state'] = 'disabled'
-    self.actuator1setting_True_dry['state'] = 'disabled'
-    self.actuator1setting_False_dry['state'] = 'disabled'
-    
-def enable_pump(self):
-    self.sensor1id['state'] = 'normal'
-    self.sensor1setting['state'] = 'normal'
-    self.actuator1id['state'] = 'normal'
-    self.actuator1setting_True['state'] = 'normal'
-    self.actuator1setting_False['state'] = 'normal'
-    self.sensor1id_dry['state'] = 'normal'
-    self.sensor1setting_dry['state'] = 'normal'
-    self.actuator1id_dry['state'] = 'normal'
-    self.actuator1setting_True_dry['state'] = 'normal'
-    self.actuator1setting_False_dry['state'] = 'normal'
 
+# Define actuator type and whether dry flow is active
+def orifice_or_pump(self):
+    if self.param.actuator_type.get() == 'orifice':
+        state = 'disabled'
+    elif self.param.actuator_type.get() == 'pump':
+        state = 'normal'        
+    self.sensor1id_dry['state'] = state
+    self.sensor1setting_dry['state'] = state
+    self.actuator1id_dry['state'] = state
+    self.actuator1setting_True_dry['state'] = state
+    self.actuator1setting_False_dry['state'] = state
+    
+# Determine whether several sensor locations can be chosen 
 def enable_sensor_location(self):
     if self.optimized_parameter.get() == 'Sensor location' or self.optimized_parameter.get() == 'Sensor location and activation depth':
         self.sensor_loc1['state'] = 'normal'
@@ -330,7 +211,6 @@ def update(entry_in, entry_out):
     entry_out.delete(0, END)
     entry_out.insert(0,entry_in.get())
 
-
 def enableEntry(entry):
     entry.configure(state='normal')
     entry.update()
@@ -339,10 +219,9 @@ def disableEntry():
     entry.configure(state = 'disabled')
     entry.update()
  
-#===================================================================     
-#===================================================================     
-    
+# =============================================================================
 # functions for the GUI buttons
+# =============================================================================
 
 def OpenFile(self):
     path = filedialog.askopenfilename(filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
@@ -352,249 +231,47 @@ def OpenFile(self):
     # Define path of the model     
     directory = os.path.split(path)[0]
     self.param.model_dir.set(directory)
-    #Using try in case user types in unknown file or closes without choosing a file.
-    #     try:
-    #         name.split('.')[-1] == 'inp'
-    # #         with open(name,'r') as UseFile:
-    # #             print(UseFile.read())
-    #     except:
-    #         model_label.configure(text = 'not a SWMM model')
 
-#===================================================================     
+# =============================================================================
 
 def generate_SWMM_file(self):
-    name = filedialog.asksaveasfilename(initialdir = self.param.model_dir.get() ,filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
-                            title = "Save file as", defaultextension='.inp')
+    msg.showerror('','Not implemented')
+#     name = filedialog.asksaveasfilename(initialdir = self.param.model_dir.get() ,filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
+#                             title = "Save file as", defaultextension='.inp')
     
-    # Read the .inp file from the model specified. 
-    read_file = self.param.model_dir.get()+'/'+self.param.model_name.get()+'.inp'
-    with open(read_file) as f:
-        with open(name, "w") as f1:
-            for line in f:
-                f1.write(line)
+#     # Read the .inp file from the model specified. 
+#     read_file = self.param.model_dir.get()+'/'+self.param.model_name.get()+'.inp'
+#     with open(read_file) as f:
+#         with open(name, "w") as f1:
+#             for line in f:
+#                 f1.write(line)
 
-# Write Control rules 
-    write_file = open(name,'a')
-    write_file.write('\n[CONTROLS]\nRULE RBC_1\n\n')
-    write_file.write('IF NODE ' + self.sensor1id.get() + ' DEPTH > ' + self.sensor1setting.get() + '\n')
-    write_file.write('THEN ORIFICE ' + self.actuator1id.get() + ' SETTING = '+ self.actuator1setting_True.get() +  '\n')
-    write_file.write('ELSE ORIFICE ' + self.actuator1id.get() + ' SETTING = '+self.actuator1setting_False.get()+'\n')
+# # Write Control rules 
+#     write_file = open(name,'a')
+#     write_file.write('\n[CONTROLS]\nRULE RBC_1\n\n')
+#     write_file.write('IF NODE ' + self.sensor1id.get() + ' DEPTH > ' + self.sensor1setting.get() + '\n')
+#     write_file.write('THEN ORIFICE ' + self.actuator1id.get() + ' SETTING = '+ self.actuator1setting_True.get() +  '\n')
+#     write_file.write('ELSE ORIFICE ' + self.actuator1id.get() + ' SETTING = '+self.actuator1setting_False.get()+'\n')
     
-    write_file.close()
-    msg.showinfo('','Saved to SWMM file')
-#================================================    
+#     write_file.close()
+#     msg.showinfo('','Saved to SWMM file')
 
-#def config_validation():
-        
-# from https://gist.github.com/tsuriga/5bc5bbfaf21c6a51cda7
-# First one is a example of the config file
-            #[DEFAULT]
-            #; Operation mode
-            #; This is a global value for all sections
-            #mode = master
-            #
-            #[server]
-            #
-            #; Connection lifetime
-            #timeout = 3600
-            #
-            #; Garbage collection mode
-            #; Accepted values: none, aggressive, smart, auto
-            #gc_mode = smart
-            #
-            #; Notice there is no mode set under this section - it will be read from defaults
-            #
-            #
-            #[client]
-            #
-            #; Fallback procedure for clients
-            #; Accepted values: none, polling, auto
-            #; Invalid value as an example here
-            #fallback = socket
-            #
-            #; Overriding global value here
-            #mode = slave
-
-
-class MyException(Exception):
-    pass
-
-
-#class MyConfig(ConfigParser):
-#    def __init__(self, config_file):
-#        super(MyConfig, self).__init__()
-#
-#        self.read(config_file)
-#        self.validate_config()
-
-class MyConfig(ConfigParser):
-    def __init__(self, config_file):
-        super(MyConfig, self).__init__()
-
-        self.read(config_file)
-        self.validate_config()
-
-
-    def validate_config(self):
-        config = configparser.ConfigParser()
-        config['DEFAULT'] = {}
-        config['Settings'] = {'Setting1': 'True',
-                              'Setting2': '2.2',
-                              'Setting3': '0'}
-        config['Model'] = {'Modelname':str,
-                              'Rain series':''
-                              }
-    
-        config['RuleBasedControl'] = {'sensor1_id':str,
-                              'sensor1_critical_depth':str,
-                              'actuator1_id':str,
-                              'actuator1_target_setting':str
-                              }
-        config['Optimization'] = {'UseOptimization':str,
-                              'reduce_flood':str,
-                              'reduce_CSO':str,
-                              'Stable_Water_Level':str
-                              }
-        
-        required_values = config
-#        required_values = {
-#            'Settings': {
-#                'setting1': 'True', b 
-#                'setting2': float,
-#                'setting3':int
-#                },
-##                'gc_mode': ('none', 'aggressive', 'smart', 'auto'),
-##                'mode': ('master')
-##            },
-#            'Model': {'modelname': str,
-##                ('none', 'polling', 'auto'),
-##                'mode': ('master', 'slave')
-#                },
-#            'RuleBasedControl':{
-#                'sensor1_id':str,
-#                'sensor1_critical_depth': str,
-#                'actuator1_id' : str,
-#                'actuator1_target_setting': str
-#                },
-#            'optimization':{
-#                'param' : str,
-#                }
-#            
-#            }   
-        """
-        Notice the different mode validations for global mode setting: we can
-        enforce different value sets for different sections
-        """
-        config = configparser.ConfigParser()
-        config.read('example.ini')
-
-
-
-
-
-      
-#
-        for section in required_values.sections():
-            if section not in config.sections():
-                raise MyException(
-                    'Missing section %s in the config file' % section)
-            for (key,value) in required_values.items(section):
-                        
-#            for (key, value) in keys.items(section):
-#            for key, values in section.items(section):                
-                if key not in config.items(section): #or config.items(section)[key] == '':
-                    raise MyException((
-                        'Missing value for %s under section %s in ' +
-                        'the config file') % (key, section))
-
-#                if value:
-#                    if self[section][key] not in values:
-#                        raise MyException((
-#                            'Invalid value for %s under section %s in ' +
-#                            'the config file') % (key, section))
-
-#cfg = {}
-#try:
-#    # The example config file has an invalid value so cfg will stay empty first
-#    cfg = MyConfig('example.ini')
-#except MyException as e:
-#    # Initially you'll see this due to the invalid value
-#    print(e)
-#else:
-#    # Once you fix the config file you'll see this
-#    print(cfg['client']['fallback'])
-#                        
-        
-        
-        
-#===================================================================    
-        
-                        
-class StartUp_window(object):
-    def __init__(self):
-        self.StartUp_window = tk.Tk()
-        self.StartUp_window.wm_title('Load model')   
-        self.StartUp_window.iconbitmap('./GUI_files/noah_logo_OAb_icon.ico')
-        self.StartUp_window.configure(background = 'white')
-    #    self.StartUp_window.geometry('520x00')
-        self.StartUp_window.resizable(False,False)
-            
-        tframe = Frame(self.StartUp_window)
-        tframe.grid(row=0,column = 0,sticky=N+S+E+W, padx=10, pady=30)
-        Label(tframe,text = 'Choose how to begin the project',bg = 'white').grid(row=0,column = 0,columnspan = 4,sticky=E+W)
-        B1 = ttk.Button(tframe, text="Load new SWMM model", command = lambda: GUI_elements.OpenFile()).grid(row=1,column=0)
-        B2 = ttk.Button(tframe, text="Load most recent config file", command = lambda: GUI_elements.OpenFile).grid(row=1,column=1)
-        B3 = ttk.Button(tframe, text="Load new config file", command = lambda: GUI_elements.OpenFile).grid(row=1,column=2)
-        B4 = ttk.Button(tframe, text="Quit", command = self.StartUp_window.destroy).grid(row = 1,column = 3, sticky = E)
-        self.StartUp_window.mainloop()
-#===================================================================    
-        
-#%%
-
-# User message:
+# =============================================================================
+# User message to be printet in console:
 def user_msg(self):
     msg = """
 Clompleted simulation {} of {}.
 Time of simulation is {}.
 Expected time of completion is {}.
 """
-    # sim_num  = 1
-    # total_sim =100
-    # sim_time = end - start
-        
+    
     sim_num = self.sim_num
     total_sim = self.max_initial_iterations + self.maxiterations
     sim_time = self.sim_end_time - self.sim_start_time
     Complete_time = datetime.now() + sim_time*int((total_sim-sim_num))
     print(msg.format(sim_num,total_sim,sim_time,Complete_time.strftime("%H:%M")))
 
-#%%
-#===================================================================    
-
-
-
-
-def Results_table(title, msg):
-  
-    popup = tk.Tk()
-    popup.wm_title(title)   
-    tframe = Frame(popup)
-    tframe.grid(row=0,column = 0,sticky ='nsew')
-    popup.columnconfigure(0, weight=4)
-    popup.rowconfigure(0, weight=4)
-    table = TableCanvas(tframe,data = msg)
-    table.show()
-
-    bframe = Frame(popup)
-    bframe.grid(row = 1,sticky = 'nsew')
-        
-    B1 = ttk.Button(bframe, text="Quit", command = popup.destroy)
-    B1.grid(row = 2,column = 1, sticky = E)
-    popup.mainloop()
-
-
-#================================================     
-
+# =============================================================================
 # Show plots 
 def Results_plot(location,timestamp_folder):
     import pickle
@@ -614,7 +291,7 @@ def Results_plot(location,timestamp_folder):
     ax.set_title('Results of first step of the optimization',fontsize = size)
     figure.savefig("../output/" + timestamp_folder + '/Plot of first step of the optimization.png')
 
-# Shows the results of the optimization
+# Shows the results of the optimization in a plot
 def First_step_optimization_plot(timestamp_folder):
     # timestamp_folder = '2020-02-05_10-38-09'
     popup_plot = tk.Tk()
@@ -634,26 +311,69 @@ def First_step_optimization_plot(timestamp_folder):
     Results_plot(mframe,timestamp_folder)
     B1 = ttk.Button(bframe, text="Quit", command = popup_plot.destroy)
     B1.grid(row = 0,column = 1, sticky = E)
-
-#===================================================================     
-
-def Results_text(title, msg):
+    
+    
+    
+# To be deleted: 
+# =============================================================================
+# 
+# def Results_table(title, msg):
   
-    popup_opt = tk.Tk()
-    popup_opt.wm_title(title)   
-    tframe = Frame(popup_opt)
-    tframe.grid(row=0,column = 0,sticky ='nsew')
+#     popup = tk.Tk()
+#     popup.wm_title(title)   
+#     tframe = Frame(popup)
+#     tframe.grid(row=0,column = 0,sticky ='nsew')
+#     popup.columnconfigure(0, weight=4)
+#     popup.rowconfigure(0, weight=4)
+#     table = TableCanvas(tframe,data = msg)
+#     table.show()
 
-    bframe = Frame(popup_opt)
-    bframe.grid(row = 1,sticky = 'nsew')
-    res_text = scrolledtext.ScrolledText(popup_opt, height = 16, width = 100, wrap = NONE)
-    label = ttk.Label(popup_opt, text=msg)
-    res_text .grid(row = 0, column = 0)
-    res_text.insert(INSERT,msg)
-    B1 = ttk.Button(bframe, text="Quit", command = popup_opt.destroy)
-    B1.grid(row = 3,column = 1, sticky = E)
-#    B2 = ttk.Button(bframe, text="Show graphs", command = lambda:optimal_solution_graph())
-#    B2.grid(row = 3,column = 0, sticky = E)
-    popup_opt.mainloop()
+#     bframe = Frame(popup)
+#     bframe.grid(row = 1,sticky = 'nsew')
+        
+#     B1 = ttk.Button(bframe, text="Quit", command = popup.destroy)
+#     B1.grid(row = 2,column = 1, sticky = E)
+#     popup.mainloop()
+
+
+# =============================================================================
+# def Results_text(title, msg):
+  
+#     popup_opt = tk.Tk()
+#     popup_opt.wm_title(title)   
+#     tframe = Frame(popup_opt)
+#     tframe.grid(row=0,column = 0,sticky ='nsew')
+
+#     bframe = Frame(popup_opt)
+#     bframe.grid(row = 1,sticky = 'nsew')
+#     res_text = scrolledtext.ScrolledText(popup_opt, height = 16, width = 100, wrap = NONE)
+#     label = ttk.Label(popup_opt, text=msg)
+#     res_text .grid(row = 0, column = 0)
+#     res_text.insert(INSERT,msg)
+#     B1 = ttk.Button(bframe, text="Quit", command = popup_opt.destroy)
+#     B1.grid(row = 3,column = 1, sticky = E)
+# #    B2 = ttk.Button(bframe, text="Show graphs", command = lambda:optimal_solution_graph())
+# #    B2.grid(row = 3,column = 0, sticky = E)
+#     popup_opt.mainloop()
     
    
+#===================================================================    
+                        
+# class StartUp_window(object):
+#     def __init__(self):
+#         self.StartUp_window = tk.Tk()
+#         self.StartUp_window.wm_title('Load model')   
+#         self.StartUp_window.iconbitmap('./GUI_files/noah_logo_OAb_icon.ico')
+#         self.StartUp_window.configure(background = 'white')
+#     #    self.StartUp_window.geometry('520x00')
+#         self.StartUp_window.resizable(False,False)
+            
+#         tframe = Frame(self.StartUp_window)
+#         tframe.grid(row=0,column = 0,sticky=N+S+E+W, padx=10, pady=30)
+#         Label(tframe,text = 'Choose how to begin the project',bg = 'white').grid(row=0,column = 0,columnspan = 4,sticky=E+W)
+#         B1 = ttk.Button(tframe, text="Load new SWMM model", command = lambda: GUI_elements.OpenFile()).grid(row=1,column=0)
+#         B2 = ttk.Button(tframe, text="Load most recent config file", command = lambda: GUI_elements.OpenFile).grid(row=1,column=1)
+#         B3 = ttk.Button(tframe, text="Load new config file", command = lambda: GUI_elements.OpenFile).grid(row=1,column=2)
+#         B4 = ttk.Button(tframe, text="Quit", command = self.StartUp_window.destroy).grid(row = 1,column = 3, sticky = E)
+#         self.StartUp_window.mainloop()
+        

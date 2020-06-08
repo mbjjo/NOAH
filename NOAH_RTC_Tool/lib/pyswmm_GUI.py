@@ -65,16 +65,13 @@ class pyswmm_GUI:
     
         # parameters that are used before the config file is written are defined here
         self.param = GUI_elements.parameters()
-        
-        # Creates variables for storing output results 
-        # self.res = GUI_elements.Results()
 
         # Widgets are created
         self.create_widgets()
         
     def create_widgets(self):
-#================================================        
-    # Define top frame
+# =============================================================================
+# Define top frame
         # Model selsction
         self.label1 = Label(self.window, text = "Model Name")
         self.label1.grid(row=0, column = 1)
@@ -85,8 +82,6 @@ class pyswmm_GUI:
                 
         self.model_label = Label(self.window, width = 15, bg = 'white', textvariable = self.param.model_name)
         self.model_label.grid(row=0, column = 2)
-#        self.label_overwrite = Label(self.window, text = "Overwrite existing configuation file:")
-#        self.label_overwrite.grid(row = 1, column = 0,columnspan = 2)
         
         self.overwrite_button = Checkbutton(self.window, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
         self.overwrite_button.deselect()    
@@ -97,8 +92,8 @@ class pyswmm_GUI:
         self.Interreg_logo = PhotoImage(file = './GUI_files/Interreg_logo_05.gif')
         Label(self.window,image = self.Interreg_logo).grid(row = 0, column = 3,sticky = E)
 
-#================================================        
-    # Define middle frame (tabs) instances of classes
+# =============================================================================
+# Define middle frame (tabs) instances of classes
         
         self.tabControl = ttk.Notebook(self.window)
         self.tabControl.grid(row = 2, columnspan = 5)
@@ -121,8 +116,8 @@ class pyswmm_GUI:
         self.Result_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.Result_tab,text = 'Results')
         
-#================================================    
-    # Define bottom frame  
+# =============================================================================
+# Define bottom frame  
         # Define executeable buttons 
         self.run_button = Button(self.window, text ='Run', width = 15, command = lambda:GUI_elements.run(self))
         self.run_button.grid(row = 5, column = 0,sticky = W,pady = 5, padx = 5)
@@ -136,37 +131,23 @@ class pyswmm_GUI:
         self.SWMM_results.grid(row = 5, column = 2,sticky = W,pady = 5, padx = 5)
         GUI_elements.create_ToolTip(self.SWMM_results,"Write the current RTC setup (specified in the simulation tab) to a SWMM file.")
         
-#        Button(self.window, text ='Show results',width = 15, command = lambda:popupresults('Results',GUI_elements.results)).grid(row = 5, column = 3,sticky = W)
         Button(self.window, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 5, column = 3,sticky = W, padx = 5)
 
-        # # Write status
-        # Label(self.window, text = 'Status:').grid(row = 6,sticky = W)    
-        # self.status_var = Label(self.window, textvariable = self.param.status).grid(row = 6,column = 0, sticky = E)
-                
-        # Label(self.window, text = 'Excpected time of simulation:').grid(row = 6, column = 2, columnspan = 2, sticky = W)
-        # # self.sim_time = Label(self.window, textvariable = self.param.sim_time).grid(row = 6,column = 4, sticky = W)
-
-        # Define progress bar
-#        self.progress_bar = ttk.Progressbar(self.window,orient = 'horizontal', length = 400, mode = 'determinate')
-#        self.progress_bar.grid(row = 7, columnspan = 5)    
-
-
-#================================================    
-
 # =============================================================================
-# # Creatng the content for the simulation tab 
+    # Create content for tabs
 # =============================================================================
+# Creatng the content for the simulation tab 
 
-# Radiobuttons for actuator type 
+    # Radiobuttons for actuator type 
         Label(self.Simulation_tab, text = "Select the type of the actuator:").grid(row=1,column = 0, sticky = 'W',columnspan = 2)
-        self.orifice_active = Radiobutton(self.Simulation_tab,text = "Orifice",var = self.param.actuator_type,value = 'orifice', command = lambda:GUI_elements.enable_orifice(self))
+        self.orifice_active = Radiobutton(self.Simulation_tab,text = "Orifice",var = self.param.actuator_type,value = 'orifice', command = lambda:GUI_elements.orifice_or_pump(self))
         self.orifice_active.grid(row = 2,column = 0,sticky = W,columnspan = 2,pady = 5)
         self.orifice_active.deselect()
-        self.pump_active = Radiobutton(self.Simulation_tab,text = "Pump",var = self.param.actuator_type,value = 'pump', command = lambda:GUI_elements.enable_pump(self))
+        self.pump_active = Radiobutton(self.Simulation_tab,text = "Pump",var = self.param.actuator_type,value = 'pump', command = lambda:GUI_elements.orifice_or_pump(self))
         self.pump_active.grid(row=2,column = 1,sticky = W,columnspan = 2,pady = 5)
         self.pump_active.select()
         
-# Dry flow or rainfall threshold
+    # Dry flow or rainfall threshold
         Label(self.Simulation_tab, text = 'Rainfall or Dryflow').grid(row = 3,column = 0,sticky = W,columnspan = 2,pady = 5)
         Label(self.Simulation_tab, text = 'If rainfall exceeds').grid(row = 4,column = 0,sticky = W,columnspan = 1)
         self.rainfall_threshold = Entry(self.Simulation_tab,width = 10)
@@ -180,7 +161,7 @@ class pyswmm_GUI:
         self.raingage1 = Entry(self.Simulation_tab,width = 15)
         self.raingage1.grid(row = 6, column = 1,sticky = W)
         GUI_elements.create_ToolTip(self.raingage1,'ID of the raingage in the system')
-# RBC frame
+    # RBC frame
         self.RBC_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Control rules setup')
         self.RBC_frame.grid(row = 1, column = 4,rowspan = 20, pady =5, padx = 15)
         # Wet weather rule
@@ -258,9 +239,7 @@ class pyswmm_GUI:
         # self.actuator1setting_False.insert(0,'0')
         GUI_elements.create_ToolTip(self.actuator1setting_False_dry,'Type in the setting of the actuator when critical depth is NOT exceeded')
         
-
-
-#================================================    
+# =============================================================================
 
 # Creatng the content for the rain tab 
         
@@ -292,9 +271,7 @@ class pyswmm_GUI:
         # # self.rain_event_intensity.insert(0,'1')
         # GUI_elements.create_ToolTip(self.rain_event_duration,'Type in the minimum duration of continous rain that is counted as an event [Unit]')
         
-
-#================================================    
-
+# =============================================================================
 # Creatng the content for the objective tab 
 
         Label(self.Control_tab,text = 'Choose the objective of the optimization.').grid(row = 0,columnspan = 3)
@@ -306,7 +283,7 @@ class pyswmm_GUI:
         self.CSO_volume.select()
         self.CSO_freq = Radiobutton(self.Control_tab,text = "Reduce CSO frequency",var = self.param.CSO_objective,value = 'frequency')
         self.CSO_freq.grid(row=1,column = 1,sticky = W,pady=10)
-#        self.CSO_freq.select()
+        # self.CSO_freq.select()
         
         Label(self.Control_tab,text = "Reduce CSO from").grid(row=3,column = 0, columnspan = 1)
         self.CSO_id1 = Entry(self.Control_tab,width = 15)
@@ -318,20 +295,6 @@ class pyswmm_GUI:
         GUI_elements.create_ToolTip(self.CSO_id1,"Write the node ID of the CSO struture")
         GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture")
         GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture")
-        
-        
-        # # Retention time
-        # self.retention_time = Radiobutton(self.Control_tab,text = "Control retention time",var = self.param.CSO_objective,value = 'retention')
-        # self.retention_time.grid(row = 1,column = 2,sticky = W,columnspan = 2)
-        # # self.retention_time.select()
-        
-        # Label(self.Control_tab,text = "In node").grid(row=3,column = 2, columnspan = 1)
-        # self.retention_id1 = Entry(self.Control_tab,width = 15)
-        # self.retention_id1.grid(row = 3,column = 3)
-        # GUI_elements.create_ToolTip(self.retention_id1,"Write the node ID of the storage basin")
-        
-        
-        
         
         # CSO Settings frame
         self.Settings_frame = ttk.LabelFrame(self.Control_tab, text = 'Settings for CSO')
@@ -347,52 +310,51 @@ class pyswmm_GUI:
         self.CSO_event_duration.grid(row = 1, column = 1,sticky = W)
         self.CSO_event_duration.insert(END, '24')
         GUI_elements.create_ToolTip(self.CSO_event_duration,"Define the time (hours) before an event is counted as more events.")
-#================================================    
 
+# =============================================================================
 # Creatng the content for the optimization tab 
         optimize_check = Checkbutton(self.Optimize_tab, text = "Use optimization", variable = self.param.UseOptimization)
         optimize_check.deselect()
-        optimize_check.grid(row = 1, column = 0,sticky = W)
+        optimize_check.grid(row = 0, column = 0,sticky = W)
         GUI_elements.create_ToolTip(optimize_check,"Choose whether optimization should be used. If not only a single simulation is run.")
         
-        Label(self.Optimize_tab, text = "Choose optimization parameters").grid(row=2,column = 0, columnspan = 3, pady  =8)
+         # Sensor location frame
+        self.optimization_frame = ttk.LabelFrame(self.Optimize_tab, text = 'Optimization parameters')
+        self.optimization_frame.grid(row =1, column = 0,rowspan = 20, pady =5, padx = 5)
+        # Label(self.Optimize_tab, text = "Choose optimization parameters").grid(row=2,column = 0, columnspan = 3, pady  =8)
          
-        Label(self.Optimize_tab, text = "Optimization method").grid(row=3,column = 0,sticky='E')
-        self.opt_method = ttk.Combobox(self.Optimize_tab,width = 20,values = ('Two-step-optimization'),state = 'readonly')
+        Label(self.optimization_frame, text = "Optimization method").grid(row=3,column = 0,sticky='E')
+        self.opt_method = ttk.Combobox(self.optimization_frame,width = 20,values = ('Two-step-optimization'),state = 'readonly')
         self.opt_method.grid(row=3, column=1)
         
-        Label(self.Optimize_tab, text = "Parameter to be optimized").grid(row=4,column = 0,sticky='E')
-        self.optimized_parameter= ttk.Combobox(self.Optimize_tab,width = 20,values = ('Activation depth','Sensor location', 'Sensor location and activation depth'),state = 'readonly')
+        Label(self.optimization_frame, text = "Parameter to be optimized").grid(row=4,column = 0,sticky='E')
+        self.optimized_parameter= ttk.Combobox(self.optimization_frame,width = 20,values = ('Activation depth','Sensor location', 'Sensor location and activation depth'),state = 'readonly')
         self.optimized_parameter.bind("<<ComboboxSelected>>",lambda x: GUI_elements.enable_sensor_location(self))
         self.optimized_parameter.grid(row=4, column=1)
         
-#        Label(self.Optimize_tab, text = "Initial value").grid(row=4,column = 0)
-#        self.initial_value = Entry(self.Optimize_tab,width = 10)
-#        self.initial_value.grid(row=4, column=1,sticky = W)
-
-        Label(self.Optimize_tab, text = "Minimum value of parameter range").grid(row=5,column = 0,sticky='E')
-        self.expected_min_Xvalue = Entry(self.Optimize_tab,width = 5)
+        Label(self.optimization_frame, text = "Minimum value of parameter range").grid(row=5,column = 0,sticky='E')
+        self.expected_min_Xvalue = Entry(self.optimization_frame,width = 5)
         self.expected_min_Xvalue.grid(row=5, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.expected_min_Xvalue,"Specify the minimum value of the parameter range. The optimizer will not find a value below this point. ")
         
-        Label(self.Optimize_tab, text = "Maximum value of parameter range").grid(row=6,column = 0,sticky='E')
-        self.expected_max_Xvalue = Entry(self.Optimize_tab,width = 5)
+        Label(self.optimization_frame, text = "Maximum value of parameter range").grid(row=6,column = 0,sticky='E')
+        self.expected_max_Xvalue = Entry(self.optimization_frame,width = 5)
         self.expected_max_Xvalue.grid(row=6, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.expected_max_Xvalue,"Specify the maximum value of the parameter range. The optimizer will not find a value above this point. ")
         
-        Label(self.Optimize_tab, text = "Number of initial simulations").grid(row=7,column = 0,sticky='E')
-        self.max_iterations_bashop = Entry(self.Optimize_tab,width = 5)
+        Label(self.optimization_frame, text = "Number of initial simulations").grid(row=7,column = 0,sticky='E')
+        self.max_iterations_bashop = Entry(self.optimization_frame,width = 5)
         self.max_iterations_bashop.grid(row=7, column=1,sticky = W)
-        GUI_elements.create_ToolTip(self.max_iterations_bashop,"Specify the number of simulations that are done in the initial round of simulations")
+        GUI_elements.create_ToolTip(self.max_iterations_bashop,"Specify the number of simulations that are done in the initial screening of the optimization.")
         
-        Label(self.Optimize_tab, text = "Maximum number of iterations for minimization").grid(row=8,column = 0,sticky='E')
-        self.max_iterations_per_minimization = Entry(self.Optimize_tab,width = 5)
+        Label(self.optimization_frame, text = "Maximum number of simulations for optimization").grid(row=8,column = 0,sticky='E')
+        self.max_iterations_per_minimization = Entry(self.optimization_frame,width = 5)
         self.max_iterations_per_minimization.grid(row=8, column=1,sticky = W)
-        GUI_elements.create_ToolTip(self.max_iterations_per_minimization,"Specify the maximum allowed number of simulations for the optimization simulations")
+        GUI_elements.create_ToolTip(self.max_iterations_per_minimization,"Specify the maximum allowed number of simulations for the second part of the optimization.")
         
          # Sensor location frame
         self.sensor_loc_frame = ttk.LabelFrame(self.Optimize_tab, text = 'Possible sensor locations')
-        self.sensor_loc_frame.grid(row =0, column = 2,rowspan = 20, pady =5, padx = 5)
+        self.sensor_loc_frame.grid(row =1, column = 2,rowspan = 20, pady =5, padx = 5)
         
         Label(self.sensor_loc_frame, text = "Select possible sensor locations").grid(row=0,column = 0,sticky = W)
         self.sensor_loc1 = Entry(self.sensor_loc_frame,width = 15)
@@ -403,27 +365,19 @@ class pyswmm_GUI:
         self.sensor_loc3.grid(row = 3, column = 0,sticky = W)
         GUI_elements.create_ToolTip(self.sensor_loc_frame,"Define the ID of nodes with possibility of a sensor.")
         # self.sensor_loc1.insert(END,self.sensor1id.get())
-        
-        
-        
-        
-        
+             
 # =============================================================================
-        # Content for the calibraion tab
-        # NOT ADDED TO PARAM!
-        
-        
+# Content for the calibraion tab
+# NOT ADDED TO PARAM!
         
         Label(self.Calibration_tab, text = "Section").grid(row=1,column = 0)
         self.Cal_section = ttk.Combobox(self.Calibration_tab,width = 20,values = ('Junctions','Conduits','Xsections')  )
         self.Cal_section.grid(row=2, column=0)
-        
         Label(self.Calibration_tab, text = "Parameter").grid(row=1,column = 1)
         self.Cal_param = ttk.Combobox(self.Calibration_tab,width = 20,values = ('Elevation', 'MaxDepth', 'InitDepth')  )
         self.Cal_param.grid(row=2, column=1)
         
         # Define radiobuttons for calibration target. 
-        
         # NOT ADDED TO PARAM!
         Label(self.Calibration_tab, text = "Calibration target").grid(row= 1,column =2)
         self.Cal_all = Radiobutton(self.Calibration_tab,text = "All",value = 'all')
@@ -444,7 +398,6 @@ class pyswmm_GUI:
         self.Cal_custom.grid(row = 5,column = 2,sticky = W)
         self.Cal_custom.deselect()
         
-        
         Label(self.Calibration_tab, text = "Calibrate by").grid(row= 6,column =0)
         self.Cal_multiply = Radiobutton(self.Calibration_tab,text = "multiply value",value = 'multiply')
         self.Cal_multiply.grid(row = 7,column = 0,sticky = W)
@@ -459,14 +412,13 @@ class pyswmm_GUI:
         self.Cal_value.grid(row=8, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.Cal_value,"Specify the value that needs to be calibrated with.")
         
-        
         self.Auto_calibration = Button(self.Calibration_tab, text ='Automatic calibration', width = 20, command = lambda:msg.showerror('','Automatic calibration is not possible'))
         self.Auto_calibration.grid(row = 8, column = 2,sticky = W, padx = 5,columnspan = 2)
         # GUI_elements.create_ToolTip(self.Auto_calibration ,"Write the current RTC setup (specified in the simulation tab) to a SWMM file.")
      
 # =============================================================================
-        # Content for the results tab
-        
+# Content for the results tab
+
         # Parameters for comparison: 
         self.Result_parameter_frame = ttk.LabelFrame(self.Result_tab, text = 'Parameters for comparison')
         self.Result_parameter_frame.grid(row = 1, column = 0,rowspan = 5, columnspan  =5, pady =5, padx = 15)
@@ -489,7 +441,6 @@ class pyswmm_GUI:
         
         Label(self.Result_parameter_frame, text = "More options...").grid(row=4,column = 0, sticky = 'W')
         
-        
         # Benchmark for comparison:
         self.Benchmark_model = Radiobutton(self.Result_tab, text = "Compute new benchmark model", var = self.param.Benchmark_model, value = 'new')
         self.Benchmark_model.select()
@@ -505,14 +456,7 @@ class pyswmm_GUI:
         self.Benchmark_model_file.grid(row = 10, column = 1 ,sticky = W, padx = 5,columnspan = 2)
         GUI_elements.create_ToolTip(self.Benchmark_model_file,"Choose an output file from an already run SWMM model for comparison.")
         
-        
-        
 # =============================================================================
-        
-        
-
-#================================================    
-    
 # Run the program
 if __name__ == "__main__":
     GUI = pyswmm_GUI()

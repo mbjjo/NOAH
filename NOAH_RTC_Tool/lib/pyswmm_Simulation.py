@@ -26,11 +26,7 @@ import swmmtoolbox.swmmtoolbox as swmmtoolbox
 import pyswmm
 from pyswmm import Simulation,Nodes,Links,SystemStats, raingages
 import GUI_elements
-#================================================    
-
-#================================================    
-
-
+# =============================================================================
 
 # The config file has been validated before this step. 
 def single_simulation(config_file):
@@ -108,7 +104,6 @@ def single_simulation(config_file):
                 print('Complete: {:.2f}'.format(sim.percent_complete))
                 
     print('Simulation ran without optimization')
-                
 
 # =============================================================================
 #config_file = 'example.ini'
@@ -126,18 +121,15 @@ class Optimizer:
         
         # self.Redefine_Timeseries()
         
-        
-#        result = self.optimized_simulation(self.initial_value) # one simulation 
-#        result = self.global_optimizer() # several simulations 
         result = self.Two_step_optimizer() # 2 step optimization  
         
         print(result)
-#        print(type(result))
         endtime = time.time()
         runtime = (endtime-starttime)/60
         self.write_optimal_result(result,runtime,config_file)
         GUI_elements.First_step_optimization_plot(self.timestamp)
         
+        print('simulation ended:')
         print(datetime.now())
 
         # Computing final simulation with optimal results
@@ -169,7 +161,6 @@ class Optimizer:
             pass
         self.model_name = config['Model']['modelname']
         self.model_dir = config['Model']['modeldirectory']
-            
         #    rain_series = config['Model']['rain_series']
             
         RBC = config['RuleBasedControl']
@@ -219,15 +210,9 @@ class Optimizer:
     ##        self.initial_value = float(Optimization['initial_value'])
     #        self.max_iterations_bashop = int(Optimization['max_iterations_bashop'])
     #        self.max_iteration_per_minimization = int(Optimization['max_iteration_per_minimization'])
-# Creating a 
-    def create_tmp_file(self):
-        
-        
-        
-        self.Redefine_Timeseries()
 
-        
-    
+# =============================================================================
+  
     def Redefine_Timeseries(self):
     #Changing the path of the Time series to run models.
         from swmmio.utils import modify_model
@@ -238,7 +223,6 @@ class Optimizer:
         path = self.model_dir
         inp_file = self.model_name
         baseline = path + '/' + inp_file + '.inp'
-        
         
         # Create a dataframe of the model's time series 
         Timeseries = create_dataframeINP(baseline, '[TIMESERIES]')
@@ -270,7 +254,7 @@ class Optimizer:
         
         
     def Two_step_optimizer(self):
-        
+    
         # First step init: determine starting point from sequencial simulations
         starting_points = np.arange(self.min_expected_Xvalue,self.max_expected_Xvalue,(self.max_expected_Xvalue-self.min_expected_Xvalue)/self.max_initial_iterations)
         initial_simulation = np.zeros(len(starting_points))
@@ -279,17 +263,13 @@ class Optimizer:
             
         # Save the result to a pickle file
         xy = np.array([starting_points,initial_simulation]).T
-
         df = pd.DataFrame(xy, columns = ['starting points','objective values'])
-        
         pickle_path = '../output/'+self.timestamp
         pickle_out = open(pickle_path + "/First_step_simulations.pickle","wb")
         pickle.dump(df, pickle_out)
         pickle_out.close()
         
-        
         start_value = starting_points[initial_simulation.argmin()]
-        
         
         if self.maxiterations > 0:
             # Second step: Simple optimization with simplex
@@ -302,41 +282,13 @@ class Optimizer:
             result = {'Only ran the inital simulations. No optimization was performed afterwards.':[],
                       'x': [start_value]}
         print(result)
+        
         # Run one more simulation to ensure that the saved .rpt and .out are the ones from the optimal setup. 
         self.optimized_simulation(result['x'][0])
 
         return result
-
-
-#     def global_optimizer(self): # Not used
-
-# #        # Define the parameter that is to be optimized
-# #        if self.optimized_parameter == 'Critical depth':
-# #            self.opt_param = self.sensor1_critical_depth
-# #        elif self.optimized_parameter == 'Sensor location':
-# #            raise('optimization of sensor location is not implemented yet')
-# #        elif self.optimized_parameter == 'Actuator target setting':
-# #            self.opt_param = self.actuator1_target_setting
-
-#     # Actual optimization command (with minimization i.e. only one starting point)
-# #        result = optimize.minimize(fun = self.optimized_simulation,
-# #                          x0 = self.initial_value, method='Nelder-Mead',
-# #                          options = {'disp':True,'maxiter':self.max_iterations})
-    
-#     # Actual optimization command (with basinhopping i.e. several starting points)
-        
-# #    parameters: 
-# #        x0 = 1
-# #        max_iter = 3
-        
-#         result = optimize.basinhopping(func = self.optimized_simulation,
-#                               x0 = 1,niter = max_iter, T = 20, stepsize = 1, 
-#                               minimizer_kwargs = {'method':'Nelder-Mead'},
-#                           disp = True, niter_success = 5)
-        
-#         return result
-
-    # optimized parameter is 'Critical depth'
+# =============================================================================
+    # optimized parameter is 'Activation depth'
     def optimized_simulation(self, x):
         self.sim_num += 1 
         self.sim_start_time = datetime.now()
@@ -349,6 +301,7 @@ class Optimizer:
                         Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_True
                     else:
                         Links(sim)[self.actuator1_id].target_setting = self.actuator1_target_setting_False
+                    # print('Complete: {:.2f}'.format(sim.percent_complete))
         elif self.actuator_type == 'pump':
             # Run simulation
             with Simulation(self.model_dir + '/' + self.model_name + '.inp' , '../output/' + self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
@@ -378,37 +331,29 @@ class Optimizer:
         if self.CSO_objective == 'volume':
             if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
                 objective_value = self.count_CSO_volume([self.CSO_id1],model_outfile)
-                print('cso1')
             elif self.CSO_id3 == '':
                 objective_value = self.count_CSO_volume([self.CSO_id1,self.CSO_id2],model_outfile)
-                print('cso 1 + 2')
             else:
                 objective_value = self.count_CSO_volume([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
-                print('all cso')
             print(objective_value)
             
         elif self.CSO_objective =='frequency':
             if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
                 objective_value = self.count_CSO_events([self.CSO_id1],model_outfile)
-                print('cso1')
             elif self.CSO_id3 == '':
                 objective_value = self.count_CSO_events([self.CSO_id1,self.CSO_id2],model_outfile)
-                print('cso 1 + 2')
             else:
                 objective_value = self.count_CSO_events([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
-                print('all cso')
             print(objective_value)
         self.sim_end_time = datetime.now()    
         GUI_elements.user_msg(self)
         return objective_value
-                    
-#===================================================================     
 
-# Objective functions    
+# =============================================================================
+# # Objective functions    
+# =============================================================================
 
     # Compute CSO volume
-    
-    
     def count_CSO_volume(self,CSO_ids, model_outfile): 
     # Note that the VSO's are now computed as regular nodes where flooding simulates overflow. 
     # If CSO's are outlets the 'Flow_lost_flooding' should be changed to 'Total_inflow'
@@ -417,7 +362,7 @@ class Optimizer:
         CSO_volume = df.sum().sum()
         return CSO_volume 
 
-        #===================================================================     
+#===================================================================     
     
     # Compute CSO frequency 
     def count_CSO_events(self,CSO_ids, model_outfile):
@@ -460,8 +405,7 @@ class Optimizer:
         total_CSO_events = sum(CSO_event_counter.values())
         return total_CSO_events
 
-    #===================================================================     
-
+# =============================================================================
 # Writing the optimal results to a text file 
         
     def write_optimal_result(self,result,runtime, config_file):
@@ -499,8 +443,3 @@ This will result in a CSO volume from the specified CSO structures of {:.0f} m3 
 
             config_file = config.read('../../config/saved_configs/'+config_file)
             
-            
-        
-#    with Simulation('../../model/'+ model_name + '.inp' , '../../output/' + time + '/' + model_name + '.rpt', '../../output/' + time + '/' + model_name + '.out') as sim: 
-
-#================================================     

@@ -15,6 +15,10 @@ You should have received a copy of the GNU General Public License along with NOA
 
 # Required imports created for the GUI 
 import pyswmm_Simulation
+import noah_calibration_tools
+from noah_calibration_tools import swmm_simulate, interpolate_swmm_times_to_obs_times, change_model_property, simulate_objective, create_new_model, create_runobjective_delete_model, generate_run_lhs, run_simplex_routine
+from model_structure_analysis import swmm_model_inventory, backwards_network_trace
+
 # Required external imports 
 import pandas as pd
 import numpy as np
@@ -40,27 +44,6 @@ from tkinter import messagebox as msg
 from tkintertable.Tables import TableCanvas
 from tkintertable.TableModels import TableModel
 
-
-
-#===================================================================     
-# Define run function
-def run(self):
-    
-    if self.param.Overwrite_config.get() == 1:
-        write_config(self) # Writes configuration file 
-    
-    msg.showinfo('','Running simulation \nSee run status in console window')
-    config_file = self.param.model_name.get() + '.ini'
-    if self.param.UseOptimization.get() == 0:
-        pyswmm_Simulation.single_simulation(config_file)
-        msg.showinfo('','Ran one simulation')
-        results_text = ''
-        
-    elif self.param.UseOptimization.get() == 1:
-        pyswmm_Simulation.Optimizer(config_file)
-        msg.showinfo('','Found optimal RTC setup\nSee file optimized_results.txt in the \output folder with the latest time for the results.')
-        results_text = 'See file optimized_results.txt in the \output folder with the latest time for the results.'
-        # generate_SWMM_file(self) # Does not work 
 
 # # =============================================================================
 # Write input from GUI to configuration file        
@@ -105,9 +88,39 @@ def write_config(self):
                               'Optimized_parameter':self.optimized_parameter.get(),
                               'expected_min_Xvalue':self.expected_min_Xvalue.get(),
                               'expected_max_Xvalue':self.expected_max_Xvalue.get(),
-                              'max_iterations_bashop':self.max_iterations_bashop.get(),
+                              'max_initial_iterations':self.max_initial_iterations.get(),
                               'max_iterations_per_minimization':self.max_iterations_per_minimization.get()                              
                               }    
+    
+    config['Calibration'] = {'Calibrate_perc_imp':self.param.Calib_perc_imp.get(),
+                             'Percent_imp_min':self.percent_imp_min.get(),
+                             'Percent_imp_max':self.percent_imp_max.get(),
+                             'Calibrate_width':self.param.Calib_width.get(),
+                             'Width_min':self.Width_min.get(),
+                             'Width_max':self.Width_max.get(),
+                             'Calibrate_initial_loss':self.param.Calib_Dstore.get(),
+                             'Initial_loss_min':self.Dstore_min.get(),
+                             'Initial_loss_max':self.Dstore_max.get(),
+                             'Calibrate_roughness_pipe':self.param.Calib_n_pipe.get(),
+                             'Roughness_pipe_min':self.n_pipe_min.get(),
+                             'Roughness_pipe_max':self.n_pipe_max.get(),
+                             'Observations':self.param.obs_data.get(),
+                             'Observations_directory':self.param.obs_data_path.get(),
+                             'Calibration_sensor':self.sensor_calib.get(),
+                             'Objective_function':self.Cal_section.get(),
+                             'Calibration_start':self.Start_calib_time.get(),
+                             'Calibration_end':self.End_calib_time.get(),
+                             'Use_hotstart':self.param.use_hotstart.get(),
+                             'Hotstart_period':self.hotstart_period_h.get(),
+                             'Calibratied_area':self.param.Calib_area.get(),
+                             'lhs_simulations':self.max_initial_iterations_calib.get(),
+                             'Simplex_simulations':self.max_optimization_iterations_calib.get(),
+                             'Optimization_method':self.optimization_method_calib.get(),
+                             'Output_time_step':self.output_time_step.get(),
+                             'Save_file_as':self.save_calib_file.get()
+                             }
+    
+    
     
     # save the file
     config_name = self.param.model_name.get()
@@ -122,15 +135,17 @@ class parameters(object):
         
         self.model_name = StringVar()
         self.model_dir = StringVar()
-        self.Overwrite_config = IntVar()
+        self.Overwrite_config = BooleanVar()
         
         # RTC settings
         self.actuator_type = StringVar()
         
         # Optimization
-        self.UseOptimization = IntVar()
+        self.UseOptimization = BooleanVar()
         self.CSO_objective = StringVar()
-       
+        
+        self.use_hotstart_sim = BooleanVar()
+
         # Results
         self.Benchmark_model = IntVar()
         self.results_vol = IntVar()
@@ -139,6 +154,333 @@ class parameters(object):
         self.results = {}       
         self.optimal_setting = {}
         
+        # Calibration
+        self.obs_data = StringVar()
+        self.obs_data_path = StringVar()
+        
+        self.use_hotstart = BooleanVar()
+        self.Calib_perc_imp = BooleanVar()
+        self.Calib_width = BooleanVar()
+        self.Calib_Dstore = BooleanVar()
+        self.Calib_n_pipe = BooleanVar()
+        
+        self.Calib_area = StringVar()
+
+# =============================================================================
+class Read_Config_Parameters:
+    def __init__(self,config_file):
+        config = configparser.ConfigParser()
+        config.read('../config/saved_configs/'+config_file)
+        # try except are only applied on float() lines. This ensures that these can be left blank. 
+        # If they are needed in the simulation an error will occur at that point
+
+        self.system_units = config['Settings']['System_Units']
+        rpt_step_tmp = config['Settings']['Reporting_timesteps']      
+        rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
+        self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
+        try:
+            self.CSO_event_seperation = float(config['Settings']['Time_seperating_CSO_events'])
+        except ValueError:
+            # print('\nWarning: Some fields are left blank or not specified correctly\n')
+            pass
+        try:
+            self.CSO_event_duration = float(config['Settings']['Max_CSO_duration'])
+        except ValueError:
+            pass
+        self.model_name = config['Model']['modelname']
+        self.model_dir = config['Model']['modeldirectory']
+
+        # Rule Based Control                    
+        RBC = config['RuleBasedControl']
+        self.actuator_type = RBC['actuator_type']
+        self.sensor1_id = RBC['sensor1_id']    
+        self.actuator1_id = RBC['actuator1_id']
+        try:
+            self.sensor1_critical_depth = float(RBC['sensor1_critical_depth']) # It could make sense to leave this blank
+            self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
+            self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
+        except ValueError:
+            # print('Parameters for the rule based control are not specified correctly or left blank.')    
+            pass
+        try:
+            self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
+            self.actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
+            self.actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
+        except ValueError:
+            # print('Parameters for the rule based control are not specified correctly.')    
+            pass
+        self.RG1 = RBC['raingage1']
+        try:
+            self.rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
+            self.rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
+        except ValueError:
+            pass
+        
+        # RTC Optimization
+        Optimization = config['Optimization']
+        self.useoptimization = bool(Optimization['useoptimization'])
+        self.optimization_method = Optimization['optimization_method']
+        self.CSO_objective = Optimization['CSO_objective']
+        self.CSO_id1 = Optimization['CSO_id1']
+        self.CSO_id2 = Optimization['CSO_id2']
+        self.CSO_id3 = Optimization['CSO_id3']
+        self.optimized_parameter = Optimization['optimized_parameter']
+        try:
+            self.min_expected_Xvalue = float(Optimization['expected_min_xvalue'])
+            self.max_expected_Xvalue = float(Optimization['expected_max_xvalue'])
+            self.max_initial_iterations = int(Optimization['max_initial_iterations'])
+            self.maxiterations = int(Optimization['max_iterations_per_minimization'])
+        except ValueError:
+            # print('Optimization parameters are not specified correctly or left blank.')
+            pass
+        
+        # Calibration
+        Calibration = config['Calibration']
+        
+        try:
+            self.calibrate_perc_imp = eval(Calibration['calibrate_perc_imp'])
+            self.percent_imp_min = float(Calibration['percent_imp_min'])
+            self.percent_imp_max = float(Calibration['percent_imp_max'])
+        except ValueError:
+            pass
+        try:    
+            self.calibrate_width = eval(Calibration['calibrate_width'])
+            self.width_min = float(Calibration['width_min'])
+            self.width_max = float(Calibration['width_max'])
+        except ValueError:
+            pass
+        try:
+            self.Calibrate_initial_loss = eval(Calibration['Calibrate_initial_loss'])
+            self.Initial_loss_min = float(Calibration['Initial_loss_min'])
+            self.Initial_loss_max = float(Calibration['Initial_loss_max'])
+        except ValueError:
+            pass
+        try:
+            self.Calibrate_roughness_pipe = eval(Calibration['Calibrate_roughness_pipe'])
+            self.Roughness_pipe_min = float(Calibration['Roughness_pipe_min'])
+            self.Roughness_pipe_max = float(Calibration['Roughness_pipe_max'])
+        except ValueError:
+            pass
+        try: 
+            self.Use_hotstart = eval(Calibration['Use_hotstart'])
+            self.hotstart_period_h = float(Calibration['Hotstart_period'])
+        except ValueError:
+            pass
+        try:
+            self.lhs_simulations = int(Calibration['lhs_simulations'])
+        except ValueError:
+            pass
+        try:
+            self.Simplex_simulations = int(Calibration['Simplex_simulations'])
+        except ValueError:
+            pass
+        try:
+            self.Output_time_step = int(Calibration['Output_time_step'])
+        except ValueError:
+            pass
+        # inpput as strings: 
+        self.Observations  = Calibration['Observations']
+        self.Observateions_dir = Calibration['Observations_directory']
+        self.Calibration_sensor = Calibration['Calibration_sensor']
+        self.Objective_function = Calibration['Objective_function']
+        self.simulationStartTime = Calibration['Calibration_start']
+        self.simulationEndTime = Calibration['Calibration_end']
+        self.Calibratied_area = Calibration['Calibratied_area']
+        self.Optimization_method = Calibration['Optimization_method']
+        self.Save_file_as = Calibration['Save_file_as']
+
+# Not important:
+# def Calibrate(self):
+    # config_file = self.param.model_name.get() + '.ini'
+    # These two lines are required in order to read the configuration file
+
+
+def Calibrate(config_file):
+    # All variables are stored as inp._VarName_ and can be used in functions. 
+    inp = Read_Config_Parameters(config_file)
+    
+    model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
+    
+    # get parameters to be calibrated: 
+    model_param = [inp.calibrate_perc_imp,inp.calibrate_width,inp.Calibrate_initial_loss,inp.Calibrate_roughness_pipe]
+    all_parameter_ranges = [[inp.percent_imp_min,inp.percent_imp_max],
+                           [inp.width_min,inp.width_max],
+                           [inp.Initial_loss_min,inp.Initial_loss_max],
+                           [inp.Roughness_pipe_min,inp.Roughness_pipe_max]]
+    all_parameter_sections = ["[SUBCATCHMENTS]", "[SUBCATCHMENTS]", "[SUBAREAS]", "[CONDUITS]"] # the section name for each of the parameters (as specified in the .inp file)
+    all_parameter_names = ['PercImperv', 'Width', 'S-Imperv', 'ManningN'] # the name of each parameter as defined in the .inp file
+    
+    num_model_parameters = sum(model_param) #number of model parameters
+    parameter_sections = [x for i,x in enumerate(all_parameter_sections) if model_param[i]]
+    parameter_names = [x for i,x in enumerate(all_parameter_names) if model_param[i]]
+    parameter_ranges = [x for i,x in enumerate(all_parameter_ranges) if model_param[i]]
+    
+    selected_nodes = [inp.Calibration_sensor]
+    selected_links = list()
+    selected_subcatchments = list()
+    
+    # select objective function from input
+    if inp.Objective_function == 'RMSE':
+        objective_func = RMSE_objective
+    elif inp.Objective_function == 'NSE':
+        objective_func = NSE_neg_objective
+    elif inp.Objective_function == 'MAE':
+        objective_func = MAE_objective
+    elif inp.Objective_function == 'Abs peak':
+        objective_func = abs_rel_peak_objective
+    elif inp.Objective_function == 'Corr peak':
+        objective_func = cor_peak_objective
+    
+    # Load observations
+    data_file_path = inp.Observateions_dir + '/' + inp.Observations + '.csv'
+    observations_loaded = pd.read_csv(data_file_path, sep=',')
+    observations_loaded['time'] = pd.to_datetime(observations_loaded['time'])
+    
+    # Create temp folder and temp file name for new SWMM models that are run and deleted again
+    
+         
+    # create folder with the time stamp for the first simulation. All results are stored in this.  
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    os.mkdir('../output/'+timestamp)   
+   
+    temp_folder_name = "temp_calibration_folder"
+    temp_folder_path = os.path.join('..','output', timestamp, temp_folder_name)
+    
+    ##################### Calculations ######################
+    
+    
+    ## Get information about model (all nodes, links, subcatchments, rain gauges)
+    model_nodes, model_links, model_subs, model_rgs = swmm_model_inventory(model_inp)
+    if inp.Calibratied_area == 'all':
+        nodes_to_modify, links_to_modify, subs_to_modify = (model_nodes, model_links, model_subs)
+    elif inp.Calibratied_area == 'upstream':
+        nodes_to_modify, links_to_modify, subs_to_modify = backwards_network_trace(model_nodes, model_links, model_subs, inp.Calibration_sensor)
+    
+    ### Sample parameters with LHS
+    if inp.Optimization_method == 'lhs' or inp.Optimization_method == 'Combined':
+        lhs_evaluated_parameters, lhs_objective_values = generate_run_lhs(inp.lhs_simulations, parameter_ranges,
+                                                                  model_inp, temp_folder_path,
+                                                                  parameter_sections, parameter_names, num_model_parameters,
+                                                                  nodes_to_modify, links_to_modify, subs_to_modify,
+                                                                  inp.simulationStartTime, inp.simulationEndTime,
+                                                                  selected_nodes, selected_links, selected_subcatchments, 
+                                                                  inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
+                                                                  observations_loaded,
+                                                                  objective_func,
+                                                                  only_best = False)
+
+        best_lhs_parameter_set = lhs_evaluated_parameters[np.argmin(lhs_objective_values),:]
+        best_lhs_objective_value = np.min(lhs_objective_values)
+        
+    elif inp.Optimization_method == 'Simplex':
+        lhs_evaluated_parameters = []
+        lhs_objective_values = []
+        best_lhs_parameter_set = [1, 1, 1, 1]
+        best_lhs_objective_value = []
+    
+    if inp.Optimization_method == 'Simplex' or inp.Optimization_method == 'Combined':
+        ### Run Scipy's simplex routine
+        # Use LHS results - best parameter set - as input to Scipy
+
+        evaluated_simplex_parameter_sets, evaluated_simplex_function_values = run_simplex_routine(best_lhs_parameter_set, 
+                                                                      model_inp, temp_folder_path,
+                                                                      parameter_sections, parameter_names, parameter_ranges, num_model_parameters,
+                                                                      nodes_to_modify, links_to_modify, subs_to_modify,
+                                                                      inp.simulationStartTime, inp.simulationEndTime,
+                                                                      selected_nodes, selected_links, selected_subcatchments,
+                                                                      inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
+                                                                      observations_loaded,
+                                                                      objective_func,
+                                                                      max_iterations = None,
+                                                                      only_best = False)
+
+        
+        best_simplex_parameter_set = evaluated_simplex_parameter_sets[np.argmin(evaluated_simplex_function_values),:]
+        best_simplex_objective_value = np.min(evaluated_simplex_function_values)
+    
+    elif inp.Optimization_method == 'lhs':
+        evaluated_simplex_parameter_sets = []
+        evaluated_simplex_function_values = []
+        best_simplex_parameter_set = []
+        best_simplex_objective_value = []
+
+    create_calibrate_plot(inp.Optimization_method,num_model_parameters,parameter_names,timestamp,
+                   lhs_evaluated_parameters,lhs_objective_values,
+                   best_lhs_parameter_set,best_lhs_objective_value,
+                   evaluated_simplex_parameter_sets,evaluated_simplex_function_values,
+                   best_simplex_parameter_set,best_simplex_objective_value)
+
+    # return ???
+    
+    
+    
+    
+    
+    # simulationStartTime = "2018-08-11 06:00" # defined as "%Y-%m-%d %H:%M"
+    # simulationEndTime = "2018-08-12 06:00" # defined as "%Y-%m-%d %H:%M"
+    # selected_nodes = ['G72K020'] # provide node names in a list  
+    # selected_links = [] # provide link names in a list
+    # selected_subcatchments = [] # provide subcatchment names in a list
+    # output_time_step = 60 # number of seconds you want your output to be in
+    # add_and_remove_hotstart_period = True # True: Add a hotstart period before the specified start time, False: Just start from the start time
+    # hotstart_period_h = 5 # number of hours to use for the hotstart
+    
+    # # If the observed location has an offset add it here
+    # K020_offset = round(18.39 - 18.31,3) # offset value - invert level of node in the observation location
+    # observations_loaded['value_no_errors'] = observations_loaded['value_no_errors'] + K020_offset
+
+
+# A simple RMSE objective function
+def RMSE_objective(obs, mod):
+    error = mod - obs
+    RMSE = np.sqrt(np.mean(np.square(error)))
+    return(RMSE)
+
+# The negative Nash-Sutcliffe Efficiency (has to be negative for calibration, as the objective function is minimized)
+def NSE_neg_objective(obs, mod):
+    error = mod - obs
+    benchmark = obs - np.mean(obs)
+    NSE_neg = - ( 1 - np.sum(np.square(error)) / np.mean(np.square(benchmark)) )
+    return(NSE_neg)
+
+# Mean Absolute Error objective function
+def MAE_objective(obs, mod):
+    error = mod - obs
+    MAE = np.mean(np.abs(error))
+    return(MAE)
+
+# Absolute Relative Peak Error
+def abs_rel_peak_objective(obs, mod):
+    abs_rel_peak_error = abs((max(mod) - max(obs))/max(obs))
+    correlation_coef = np.corrcoef(mod,obs)[0][1]
+    mixed_objective = abs_rel_peak_error - correlation_coef
+    return(mixed_objective)
+
+# A two-objective function: absolute relative peak error + linear correlation
+def cor_peak_objective(obs, mod):
+    abs_rel_peak_error = abs((max(mod) - max(obs))/max(obs))
+    correlation_coef = np.corrcoef(mod,obs)[0][1]
+    mixed_objective = abs_rel_peak_error - correlation_coef
+    return(mixed_objective)
+
+# =============================================================================
+
+def Optimize_Real_time_control():
+    # These two lines are required in order to read the configuration file
+    # All variables are stored as inp._VarName_ and can be used in functions. 
+    config_file = self.param.model_name.get() + '.ini'
+    inp = Read_Config_Parameters(config_file)
+    
+    model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
+    
+    Two_step_optimizer()
+    
+    write_SWMM_controls()
+    
+    # return 
+    
+
+    
 # =============================================================================
 # Tooltip
 class ToolTip(object):
@@ -187,6 +529,8 @@ def create_ToolTip(widget, text):
 def orifice_or_pump(self):
     if self.param.actuator_type.get() == 'orifice':
         state = 'disabled'
+    if self.param.actuator_type.get() == 'weir':
+        state = 'disabled'
     elif self.param.actuator_type.get() == 'pump':
         state = 'normal'        
     self.sensor1id_dry['state'] = state
@@ -206,6 +550,36 @@ def enable_sensor_location(self):
         self.sensor_loc2['state'] = 'disabled'
         self.sensor_loc3['state'] = 'disabled'
     
+    
+def enable_calib_method(self):
+    if self.optimization_method_calib.get() == 'lhs':
+        self.max_initial_iterations_calib['state'] = 'normal'
+        self.max_optimization_iterations_calib['state'] = 'disabled'
+    elif self.optimization_method_calib.get() == 'Simplex':
+        self.max_initial_iterations_calib['state'] = 'disabled'        
+        self.max_optimization_iterations_calib['state'] = 'normal'
+    elif self.optimization_method_calib.get() == 'Combined':
+        self.max_initial_iterations_calib['state'] = 'normal'
+        self.max_optimization_iterations_calib['state'] = 'normal'
+        
+def enable_RTC_optimization(self):
+    if self.param.UseOptimization.get() == True:
+        state = 'normal'
+        self.opt_method['state'] = 'readonly'
+        self.optimized_parameter['state'] = 'readonly'
+    
+    elif self.param.UseOptimization.get() == False:
+        state = 'disabled'
+        self.opt_method['state'] = state
+        self.optimized_parameter['state'] = state
+    self.expected_min_Xvalue['state'] = state
+    self.expected_max_Xvalue['state'] = state
+    self.max_initial_iterations['state'] = state
+    self.max_iterations_per_minimization['state'] = state
+    
+    
+        
+        
 # Update the text of one entry based on another.
 def update(entry_in, entry_out):
     entry_out.delete(0, END)
@@ -219,19 +593,70 @@ def disableEntry():
     entry.configure(state = 'disabled')
     entry.update()
  
+def update_Hotstart(self,checkbutton_param,entry):
+    if checkbutton_param.get() == True:
+        entry['state'] = 'normal'
+    elif checkbutton_param.get() == False:
+        entry['state'] = 'disabled'
+        
+    
+ 
+    
+def update_min_max_calib(self,input_param,min_entry,max_entry,min_val,max_val):
+    if input_param.get() == True:
+        min_entry.configure(state= 'normal')
+        max_entry.configure(state= 'normal')
+        # if min_entry.get() == '':
+        #     min_entry.insert(END,min_val)
+        # if max_entry.get() == '':
+        #     max_entry.insert(END,max_val)
+    else:
+        min_entry.configure(state= 'disabled')
+        max_entry.configure(state= 'disabled')
+        
 # =============================================================================
 # functions for the GUI buttons
 # =============================================================================
 
-def OpenFile(self):
-    path = filedialog.askopenfilename(filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
-                       title = "Choose a file.")
-    modelname = path.split('/')[-1].split('.')[-2]
-    self.param.model_name.set(modelname)
-    # Define path of the model     
-    directory = os.path.split(path)[0]
-    self.param.model_dir.set(directory)
+#===================================================================     
+# Define run function
+def run(self):
+    
+    if self.param.Overwrite_config.get() == True:
+        write_config(self) # Writes configuration file 
+    
+    msg.showinfo('','Running simulation \nSee run status in console window')
+    config_file = self.param.model_name.get() + '.ini'
+    # generate_SWMM_file(self) # Does not work 
+    pyswmm_Simulation.Optimizer(config_file)
 
+# =============================================================================
+def OpenFile(self):
+    try:
+        path = filedialog.askopenfilename(filetypes =(("SWMM model", "*.inp"),("All Files","*.*")),
+                       title = "Choose a file.")
+        modelname = path.split('/')[-1].split('.')[-2]
+        self.param.model_name.set(modelname)
+        # Define path of the model     
+        directory = os.path.split(path)[0]
+        self.param.model_dir.set(directory)
+        if self.save_calib_file.get() == '':
+            self.save_calib_file.insert(END,modelname + '_Calibrated')
+    except IndexError: 
+        print('No model selected.')
+
+# =============================================================================
+def select_obs(self):
+    try:
+        path = filedialog.askopenfilename(filetypes =(("csv", "*.csv"),("All Files","*.*")),
+                           title = "Choose a file.")
+        obs_data = path.split('/')[-1].split('.')[-2]
+        self.param.obs_data.set(obs_data)
+        # Define path of the model     
+        directory = os.path.split(path)[0]
+        self.param.obs_data_path.set(directory)
+    except IndexError:
+        print('No observation file selected') 
 # =============================================================================
 
 def generate_SWMM_file(self):
@@ -292,8 +717,7 @@ def Results_plot(location,timestamp_folder):
     figure.savefig("../output/" + timestamp_folder + '/Plot of first step of the optimization.png')
 
 # Shows the results of the optimization in a plot
-def First_step_optimization_plot(timestamp_folder):
-    # timestamp_folder = '2020-02-05_10-38-09'
+def First_step_optimization_plot(timestamp):
     popup_plot = tk.Tk()
     popup_plot.wm_title('Results')   
     tframe = Frame(popup_plot)
@@ -303,17 +727,125 @@ def First_step_optimization_plot(timestamp_folder):
     bframe = Frame(popup_plot)
     bframe.grid(row = 2,sticky = 'nsew')
 
-    with open('../output/' + timestamp_folder + '/optimized_results.txt','r') as file:
+    with open('../output/' + timestamp+ '/optimized_results.txt','r') as file:
         resultfile = file.read()  
     res_text = scrolledtext.ScrolledText(tframe, height = 15, width = 70, wrap = "word")
     res_text .grid(row = 0, column = 0)
     res_text.insert(INSERT,resultfile)
-    Results_plot(mframe,timestamp_folder)
+    Results_plot(mframe,timestamp)
     B1 = ttk.Button(bframe, text="Quit", command = popup_plot.destroy)
     B1.grid(row = 0,column = 1, sticky = E)
     
     
+def create_calibrate_plot(calibrate_method,num_model_parameters,parameter_names,timestamp,
+                   lhs_evaluated_parameters,lhs_objective_values,
+                   best_lhs_parameter_set,best_lhs_objective_value,
+                   evaluated_simplex_parameter_sets,evaluated_simplex_function_values,
+                   best_simplex_parameter_set,best_simplex_objective_value):
+    # Creates plots of the optimization of the calibration. 
+    # These are saved as .png files in the output folder. 
     
+    if calibrate_method == 'lhs':
+        # Plot LHS results
+        fig_lhs, ax = plt.subplots(1,num_model_parameters)
+        for i in range(num_model_parameters):
+            ax[i].plot(lhs_evaluated_parameters[:,i], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
+            ax[i].plot(best_lhs_parameter_set[i], best_lhs_objective_value, 'r.',label = 'best lhs simulation')
+            ax[i].set_title(parameter_names[i])
+            ax[i].set_xlabel("Parameter Value")
+        ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        plt.savefig('../output/' + timestamp +'/lhs_figure.png',bbox_inches='tight')
+  
+    elif calibrate_method == 'Combined':
+        fig_both, ax = plt.subplots(1,num_model_parameters)
+        for i in range(num_model_parameters):
+            ax[i].plot(lhs_evaluated_parameters[:,i], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
+            ax[i].plot(evaluated_simplex_parameter_sets[:,i], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
+            ax[i].plot(best_lhs_parameter_set[i], best_lhs_objective_value,'r.',label = 'best lhs simulation')
+            ax[i].plot(best_simplex_parameter_set[i], best_simplex_objective_value,'y.',label = 'best simplex simulation')
+            ax[i].set_title(parameter_names[i])
+            ax[i].set_xlabel("Parameter Value")
+            
+        ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        plt.savefig('../output/' + timestamp +'/lhs_and_simplex_figure.png',bbox_inches='tight')
+    
+        # plot of simplex objective function values over time (to check convergence)
+        fig_simplex_iterations, ax = plt.subplots(1,1)
+        ax.plot(evaluated_simplex_function_values,'.')
+        ax.set_title('Check model convergence')
+        ax.set_xlabel("Model iterations")
+        plt.savefig('../output/' + timestamp +'/simplex_convergence.png',bbox_inches='tight')
+    
+    elif calibrate_method == 'Simplex':
+        fig_simplex, ax = plt.subplots(1,num_model_parameters)
+        for i in range(num_model_parameters):
+            ax[i].plot(evaluated_simplex_parameter_sets[:,i], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
+            ax[i].plot(best_simplex_parameter_set[i], best_simplex_objective_value,'y.',label = 'best simplex simulation')
+            ax[i].set_title(parameter_names[i])
+            ax[i].set_xlabel("Parameter Value")
+            fig_simplex.legend()
+        ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        plt.savefig('../output/' + timestamp +'/simplex_figure.png',bbox_inches='tight')
+    
+        # plot of simplex objective function values over time (to check convergence)
+        fig_simplex_iterations, ax = plt.subplots(1,1)
+        ax.plot(evaluated_simplex_function_values,'.')
+        ax.set_title('Check model convergence')
+        ax.set_xlabel("Model iterations")
+        plt.savefig('../output/' + timestamp +'/simplex_convergence.png',bbox_inches='tight')
+   
+def calibrate_results(timestamp):
+    from PIL import ImageTk, Image
+    
+    popup_plot = tk.Tk()
+    popup_plot.wm_title('Results')   
+    tframe = Frame(popup_plot)
+    tframe.grid(row=0,column = 0,sticky ='nsew')
+    mframe = Frame(popup_plot)
+    mframe.grid(row=1,column = 0,sticky ='nsew')
+    bframe = Frame(popup_plot)
+    bframe.grid(row = 2,sticky = 'nsew')
+
+    
+    with open('../output/' + timestamp+ '/results.txt','r') as file:
+        resultfile = file.read()  
+    res_text = scrolledtext.ScrolledText(tframe, height = 15, width = 70, wrap = "word")
+    res_text .grid(row = 0, column = 0)
+    res_text.insert(INSERT,resultfile)
+        
+    canvas = Canvas(mframe, width = 700, height = 200)      
+    canvas.grid(row = 0) 
+    
+    images = os.listdir('../output/' + timestamp+ '/')
+    for im in images[:]:
+        if not im.endswith(".png"):
+            images.remove(im)
+    
+    # img = Image.open("File.jpg")  # PIL solution
+# img = img.resize((250, 250), Image.ANTIALIAS) #The (250, 250) is (height, width)
+# img = ImageTk.PhotoImage(img) # convert to PhotoImage
+# image = C.create_image(1500,0, anchor = NE, image = img)
+# image.pack() # canvas objects do not use pack() or grid()
+
+    print(images)
+    for i, image in enumerate(images):
+        img = Image.open('../output/' + timestamp+ '/' + image) # PIL solution
+        img = img.resize((2, 2), Image.ANTIALIAS) #The (250, 250) is (height, width)
+        img = PhotoImage(img)      
+        img = PhotoImage(file='../output/' + timestamp+ '/' + image)      
+        canvas.create_image(0,i*100, anchor=NW, image=img)      
+    
+    
+    
+    
+    B1 = ttk.Button(bframe, text="Exit", command = popup_plot.destroy)
+    B1.grid(row = 0,column = 0, sticky = E)
+    popup_plot.mainloop()
+    
+    
+    
+if __name__ == "__main__": 
+    calibrate_results('2020-06-16_13-02-45')
 # To be deleted: 
 # =============================================================================
 # 

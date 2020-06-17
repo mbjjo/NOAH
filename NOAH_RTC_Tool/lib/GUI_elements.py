@@ -295,6 +295,15 @@ class Read_Config_Parameters:
     # These two lines are required in order to read the configuration file
 
 
+
+def Calibrate_with_config(self):
+    if self.param.Overwrite_config.get() == True:
+        write_config(self) # Writes configuration file 
+    
+    msg.showinfo('','Running calibration \nSee run status in console window')
+    config_file = self.param.model_name.get() + '.ini'
+    Calibrate(config_file)
+
 def Calibrate(config_file):
     # All variables are stored as inp._VarName_ and can be used in functions. 
     inp = Read_Config_Parameters(config_file)
@@ -375,7 +384,7 @@ def Calibrate(config_file):
     elif inp.Optimization_method == 'Simplex':
         lhs_evaluated_parameters = []
         lhs_objective_values = []
-        best_lhs_parameter_set = [1, 1, 1, 1]
+        best_lhs_parameter_set = list(np.ones(num_model_parameters))
         best_lhs_objective_value = []
     
     if inp.Optimization_method == 'Simplex' or inp.Optimization_method == 'Combined':

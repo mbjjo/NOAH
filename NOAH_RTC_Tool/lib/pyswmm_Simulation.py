@@ -169,7 +169,13 @@ class Optimizer:
             New_controls_section['[CONTROLS]'][2] = 'THEN WEIR {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_True))
             New_controls_section['[CONTROLS]'][3] = 'ELSE WEIR {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_False))
         else:
-            print('Actuator type not defined')
+            # print('Actuator type not defined')
+            # pass
+            New_controls_section = pd.DataFrame({'[CONTROLS]':np.zeros(4)})
+            New_controls_section['[CONTROLS]'][0] = 'RULE NOAH_RTC_tool'
+            New_controls_section['[CONTROLS]'][1] = 'IF NODE {} DEPTH > {:}'.format(self.sensor1_id,x)
+            New_controls_section['[CONTROLS]'][2] = 'THEN PUMP {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_True))
+            New_controls_section['[CONTROLS]'][3] = 'ELSE PUMP {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_False))
         # Create a temporary file with the adjusted path
         new_file = self.model_dir +'/'+ self.model_name + filename+ '.inp'
         shutil.copyfile(self.model_dir +'/'+ self.model_name + '.inp',new_file)

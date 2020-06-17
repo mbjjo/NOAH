@@ -83,11 +83,6 @@ class pyswmm_GUI:
         self.model_label = Label(self.window, width = 30, bg = 'white', textvariable = self.param.model_name)
         self.model_label.grid(row=0, column = 2)
         
-        self.overwrite_button = Checkbutton(self.window, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
-        self.overwrite_button.deselect()    
-        self.overwrite_button.grid(row = 4, column = 0,sticky = W, columnspan = 2)
-        GUI_elements.create_ToolTip(self.overwrite_button,"Check if the parameters specified in the GUI should be written to configuration file. Else the existing file is used.")
-
         # Creates a logo in the corner 
         self.Interreg_logo = PhotoImage(file = './GUI_files/Interreg_logo_05.gif')
         Label(self.window,image = self.Interreg_logo).grid(row = 0, column = 3,sticky = E)
@@ -119,20 +114,25 @@ class pyswmm_GUI:
 # =============================================================================
 # Define bottom frame  
         # Define executeable buttons 
-        self.run_button = Button(self.window, text ='Run', width = 15, command = lambda:GUI_elements.run(self))
-        self.run_button.grid(row = 5, column = 0,sticky = W,pady = 5, padx = 5)
+        self.run_button = Button(self.Simulation_tab, text ='Run RTC ', width = 15, command = lambda:GUI_elements.run(self))
+        self.run_button.grid(row = 6, column = 0,sticky = W,pady = 5, padx = 5)
         GUI_elements.create_ToolTip(self.run_button,'Runs the simulation with the configuration file.')
         
-        self.write_config = Button(self.window, text ='Save config', width = 15, command = lambda:GUI_elements.write_config(self))
-        self.write_config.grid(row = 5, column = 1,sticky = W,pady = 5, padx = 5)
+        self.write_config = Button(self.Simulation_tab, text ='Save config', width = 15, command = lambda:GUI_elements.write_config(self))
+        self.write_config.grid(row = 6, column = 1,sticky = W,pady = 5, padx = 5)
         GUI_elements.create_ToolTip(self.write_config,"Save the configuration file without running.")
         
-        self.SWMM_results = Button(self.window, text ='Write to SWMM file', width = 15, command = lambda: GUI_elements.generate_SWMM_file(self))
-        self.SWMM_results.grid(row = 5, column = 2,sticky = W,pady = 5, padx = 5)
-        GUI_elements.create_ToolTip(self.SWMM_results,"Write the current RTC setup (specified in the simulation tab) to a SWMM file.")
-        
-        Button(self.window, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 5, column = 3,sticky = W, padx = 5)
+        self.overwrite_button_sim = Checkbutton(self.Simulation_tab, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
+        self.overwrite_button_sim.deselect()    
+        self.overwrite_button_sim.grid(row = 5, column = 0,sticky = W, columnspan = 3)
+        GUI_elements.create_ToolTip(self.overwrite_button_sim,"Check if the parameters specified in the GUI should be written to configuration file. Else the existing file is used.")
 
+        # self.SWMM_results = Button(self.window, text ='Write to SWMM file', width = 15, command = lambda: GUI_elements.generate_SWMM_file(self))
+        # self.SWMM_results.grid(row = 5, column = 2,sticky = W,pady = 5, padx = 5)
+        # GUI_elements.create_ToolTip(self.SWMM_results,"Write the current RTC setup (specified in the simulation tab) to a SWMM file.")
+        
+        Button(self.Simulation_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 6, column = 2,sticky =E, padx = 5)
+        
 # =============================================================================
     # Create content for tabs
 # =============================================================================
@@ -141,7 +141,7 @@ class pyswmm_GUI:
    
     # RBC frame
         self.RBC_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Control rules setup')
-        self.RBC_frame.grid(row = 1, column = 0,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.RBC_frame.grid(row = 1, column = 0,columnspan = 2, pady =5, padx = 5,sticky = NSEW)
         GUI_elements.create_ToolTip(self.RBC_frame,'Define the rules that are applied as Rule Based Control in SWMM.')
         
          # Radiobuttons for actuator type 
@@ -253,7 +253,7 @@ class pyswmm_GUI:
         
         # Simulation period frame
         self.RTC_period_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Simulation period')
-        self.RTC_period_frame.grid(row =2, column = 1,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.RTC_period_frame.grid(row =2, column = 2,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
         # Simulation period
         Label(self.RTC_period_frame, text = "Start time").grid(row= 1,column =0, sticky = E)
         Label(self.RTC_period_frame, text = "End time").grid(row= 2,column =0,sticky = E)
@@ -315,7 +315,7 @@ class pyswmm_GUI:
         
         # Objective function frame
         self.objective_frame= ttk.LabelFrame(self.Simulation_tab,width=385, height=460, text = 'Control objective')
-        self.objective_frame.grid(row =1, column = 1,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.objective_frame.grid(row =1, column = 2,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
         
         # Define radiobuttons for CSO objective
         self.CSO_volume = Radiobutton(self.objective_frame,text = "Reduce CSO volume",var = self.param.CSO_objective,value = 'volume')
@@ -338,7 +338,7 @@ class pyswmm_GUI:
         
         # CSO Settings frame
         self.CSO_settings_frame = ttk.LabelFrame(self.Simulation_tab, text = 'CSO settings')
-        self.CSO_settings_frame.grid(row = 4, column = 0,rowspan = 1, columnspan = 1, pady =5, padx = 5,sticky= NSEW)
+        self.CSO_settings_frame.grid(row = 4, column = 0,rowspan = 1, columnspan = 2, pady =5, padx = 5,sticky= NSEW)
         
         Label(self.CSO_settings_frame, text = "Time seperation CSO events").grid(row=0,column = 0,sticky = E)
         self.CSO_event_seperation = Entry(self.CSO_settings_frame,width = 5)
@@ -359,7 +359,7 @@ class pyswmm_GUI:
 # Creatng the content for the optimization tab 
          # optimization frame
         self.optimization_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Optimization parameters')
-        self.optimization_frame.grid(row =2, column = 0,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.optimization_frame.grid(row =2, column = 0,columnspan = 2, pady =5, padx = 5,sticky = NSEW)
         # Label(self.Optimize_tab, text = "Choose optimization parameters").grid(row=2,column = 0, columnspan = 3, pady  =8)
          
         self.optimize_check = Checkbutton(self.optimization_frame, text = "Use optimization", variable = self.param.UseOptimization, command = lambda: GUI_elements.enable_RTC_optimization(self))
@@ -415,7 +415,7 @@ class pyswmm_GUI:
 
         # Clibration parameter frame
         self.calib_param_frame = ttk.LabelFrame(self.Calibration_tab, text = 'Calibration parameter')
-        self.calib_param_frame.grid(row =1, column = 0,columnspan = 2 ,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.calib_param_frame.grid(row =1, column = 0,columnspan = 3 ,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
         GUI_elements.create_ToolTip(self.calib_param_frame,"Check the parameters that are to be calibrated and specify minimum and maximum allowed values.")
         
         Label(self.calib_param_frame, text = "Parameter").grid(row=1,column = 0)
@@ -472,9 +472,10 @@ class pyswmm_GUI:
         self.n_pipe_min.configure(state= 'disabled')
         self.n_pipe_max.insert(END,1.3)
         self.n_pipe_max.configure(state= 'disabled')
+        
         #Observations area frame
         self.calib_obs_frame = ttk.LabelFrame(self.Calibration_tab, text = 'Observations')
-        self.calib_obs_frame .grid(row =2, column = 0,columnspan =2, pady =5, padx = 5,sticky = NSEW)
+        self.calib_obs_frame .grid(row =2, column = 0,columnspan =3, pady =5, padx = 5,sticky = NSEW)
 
         self.obs_button = Button(self.calib_obs_frame, text ='Select observations',width = 15, command = lambda: GUI_elements.select_obs(self))
         self.obs_button.grid(row = 2, column = 0,sticky = E)
@@ -494,7 +495,7 @@ class pyswmm_GUI:
         
         # Clibration period frame
         self.calib_period_frame = ttk.LabelFrame(self.Calibration_tab, text = 'Calibration period')
-        self.calib_period_frame.grid(row =1, column = 2,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.calib_period_frame.grid(row =1, column = 3,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
         # Calibration period
         # Label(self.calib_period_frame, text = "Calibration period").grid(row= 0,column =0,columnspan = 2)
         Label(self.calib_period_frame, text = "Start time").grid(row= 1,column =0, sticky = E)
@@ -519,7 +520,7 @@ class pyswmm_GUI:
         GUI_elements.create_ToolTip(self.hotstart_period_h,"Specify the length of the hotstart period [hours].")
         #Calibration area frame
         self.calib_area_frame = ttk.LabelFrame(self.Calibration_tab, text = 'Calibration area')
-        self.calib_area_frame.grid(row =2, column = 2,columnspan =1, pady =5, padx = 5,sticky = NSEW)
+        self.calib_area_frame.grid(row =2, column = 3,columnspan =1, pady =5, padx = 5,sticky = NSEW)
         GUI_elements.create_ToolTip(self.calib_area_frame,"Choose the area in the model that is to be calibrated.")
         
         # Calibration area. 
@@ -539,7 +540,7 @@ class pyswmm_GUI:
 
         #Settings frame
         self.settings_calib= ttk.LabelFrame(self.Calibration_tab, text = 'Settings')
-        self.settings_calib.grid(row =3, column = 0,columnspan =2, pady =5, padx = 5,sticky = NSEW)
+        self.settings_calib.grid(row =3, column = 0,columnspan =3, pady =5, padx = 5,sticky = NSEW)
 
         Label(self.settings_calib, text = "Number of lhs simulations").grid(row=1,column = 0,sticky='E')
         self.max_initial_iterations_calib = Entry(self.settings_calib,width = 5)
@@ -565,14 +566,26 @@ class pyswmm_GUI:
         # Save calibrated model as:
         Label(self.Calibration_tab, text = "Save calibrated file as:").grid(row= 5,column =0,columnspan = 1)
         self.save_calib_file = Entry(self.Calibration_tab,width = 40)
-        self.save_calib_file.grid(row=5, column=1,sticky = W,columnspan = 2)
+        self.save_calib_file.grid(row=5, column=1,sticky = W,columnspan = 3)
         GUI_elements.create_ToolTip(self.save_calib_file,"Select the name of the calibrated file.")
+        
+        
+        self.overwrite_button = Checkbutton(self.Calibration_tab, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
+        self.overwrite_button.deselect()    
+        self.overwrite_button.grid(row = 6, column = 0,sticky = W, columnspan = 3)
+        GUI_elements.create_ToolTip(self.overwrite_button,"Check if the parameters specified in the GUI should be written to configuration file. Else the existing file is used.")
 
+        
         # Calibration button
-        self.Auto_calibration = Button(self.Calibration_tab, text ='Run calibration', width = 20, command = lambda:GUI_elements.Calibrate(self.param.model_name.get() + '.ini'))
-        self.Auto_calibration.grid(row = 6, column = 0,sticky = W, padx = 5,columnspan = 2)
+        self.Auto_calibration = Button(self.Calibration_tab, text ='Run calibration', width = 15, command = lambda:GUI_elements.Calibrate_with_config(self))
+        self.Auto_calibration.grid(row = 7, column = 0,sticky = W, padx = 5,columnspan = 1)
+        
+        # self.write_config = Button(self.Calibration_tab, text ='Save config', width = 15, command = lambda:GUI_elements.write_config(self))
+        # self.write_config.grid(row = 6, column = 0,sticky = W,pady = 5, padx = 5)
+        # GUI_elements.create_ToolTip(self.write_config,"Save the configuration file without running.")
+        
+        Button(self.Calibration_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 7, column = 2,sticky = W, padx = 5)
 
-    
 # =============================================================================
 # Content for the results tab
 

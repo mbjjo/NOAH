@@ -336,6 +336,12 @@ class pyswmm_GUI:
         GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture")
         GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture")
         
+        Label(self.objective_frame,text = "OR provide list:").grid(row=6,column = 0, columnspan = 1)
+        self.Custom_CSO_ids= Entry(self.objective_frame,width = 30)
+        self.Custom_CSO_ids.grid(row = 7,column = 0, columnspan = 3)
+        GUI_elements.create_ToolTip(self.Custom_CSO_ids,"Provide a list of CSO's. seperate with , \nIf applied the 3 above are ignored")
+        
+        
         # CSO Settings frame
         self.CSO_settings_frame = ttk.LabelFrame(self.Simulation_tab, text = 'CSO settings')
         self.CSO_settings_frame.grid(row = 4, column = 0,rowspan = 1, columnspan = 2, pady =5, padx = 5,sticky= NSEW)

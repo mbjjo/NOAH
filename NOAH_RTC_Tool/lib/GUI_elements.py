@@ -85,6 +85,7 @@ def write_config(self):
                               'CSO_id1':self.CSO_id1.get(),
                               'CSO_id2':self.CSO_id2.get(),
                               'CSO_id3':self.CSO_id3.get(),
+                              'Custom_CSO_ids':self.Custom_CSO_ids.get(),
                               'Optimized_parameter':self.optimized_parameter.get(),
                               'expected_min_Xvalue':self.expected_min_Xvalue.get(),
                               'expected_max_Xvalue':self.expected_max_Xvalue.get(),
@@ -224,6 +225,7 @@ class Read_Config_Parameters:
         self.CSO_id1 = Optimization['CSO_id1']
         self.CSO_id2 = Optimization['CSO_id2']
         self.CSO_id3 = Optimization['CSO_id3']
+        self.Custom_CSO_ids = Optimization['Custom_CSO_ids']
         self.optimized_parameter = Optimization['optimized_parameter']
         try:
             self.min_expected_Xvalue = float(Optimization['expected_min_xvalue'])

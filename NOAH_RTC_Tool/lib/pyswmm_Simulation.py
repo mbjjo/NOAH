@@ -43,7 +43,7 @@ class Optimizer:
         # self.Redefine_Timeseries()
         
         if self.useoptimization == False:
-            result = self.simulation(self.sensor1_critical_depth) # single simulation
+            result = self.simulation([self.sensor1_critical_depth]) # single simulation
             print('Simulation ran without optimization')
         else:
             result = self.Two_step_optimizer() # 2 step optimization  
@@ -96,7 +96,7 @@ class Optimizer:
             self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
             self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
         except ValueError:
-            print('Parameters for the rule based control are not specified correctly or left blank.')    
+            # print('Parameters for the rule based control are not specified correctly or left blank.')    
             pass
         try:
             self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
@@ -113,12 +113,13 @@ class Optimizer:
             pass
         
         Optimization = config['Optimization']
-        self.useoptimization = bool(Optimization['useoptimization'])
+        self.useoptimization = eval(Optimization['useoptimization'])
         self.optimization_method = Optimization['optimization_method']
         self.CSO_objective = Optimization['CSO_objective']
         self.CSO_id1 = Optimization['CSO_id1']
         self.CSO_id2 = Optimization['CSO_id2']
         self.CSO_id3 = Optimization['CSO_id3']
+        self.Custom_CSO_ids = Optimization['Custom_CSO_ids']
         self.optimized_parameter = Optimization['optimized_parameter']
         try:
             self.min_expected_Xvalue = float(Optimization['expected_min_xvalue'])
@@ -126,7 +127,7 @@ class Optimizer:
             self.max_initial_iterations = int(Optimization['max_initial_iterations'])
             self.maxiterations = int(Optimization['max_iterations_per_minimization'])
         except ValueError:
-            print('Optimization parameters are not specified correctly or left blank.')
+            # print('Optimization parameters are not specified correctly or left blank.')
             pass
         
     #        self.min_expected_Xvalue = float(Optimization['min_expected_Xvalue'])
@@ -277,7 +278,7 @@ class Optimizer:
             result = {'Only ran the inital simulations. No optimization was performed afterwards.':[],
                       'x': [start_value]}
         
-        print(result)
+        # print(result)
         
         # Run one more simulation to ensure that the saved .rpt and .out are the ones from the optimal setup. 
         # self.simulation(result['x'][0])
@@ -345,22 +346,66 @@ class Optimizer:
                 
         # Output file is defined
         model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
+        if self.Custom_CSO_ids == '':
+            CSO_ids = [i for i in [self.CSO_id1,self.CSO_id2,self.CSO_id3] if i] 
+        else:
+            CSO_ids = [x.strip(' ') for x in self.Custom_CSO_ids.split(',')]
+        
         if self.CSO_objective == 'volume':
-            if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
-                objective_value = self.count_CSO_volume([self.CSO_id1],model_outfile)
-            elif self.CSO_id3 == '':
-                objective_value = self.count_CSO_volume([self.CSO_id1,self.CSO_id2],model_outfile)
-            else:
-                objective_value = self.count_CSO_volume([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
+            objective_value = self.count_CSO_volume(CSO_ids,model_outfile)
+            
+            # Saving the other function as pickle:
+            df = self.count_CSO_events(CSO_ids,model_outfile)
+            pickle_path = '../output/'+self.timestamp
+            pickle_name = '/CSO_events_{}.pickle'.format(self.sim_num)
+            pickle_out = open(pickle_path + pickle_name,"wb")
+            pickle.dump(df, pickle_out)
+            pickle_out.close()
+        
+            
             
         elif self.CSO_objective =='frequency':
-            if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
-                objective_value = self.count_CSO_events([self.CSO_id1],model_outfile)
-            elif self.CSO_id3 == '':
-                objective_value = self.count_CSO_events([self.CSO_id1,self.CSO_id2],model_outfile)
-            else:
-                objective_value = self.count_CSO_events([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
+            objective_value = self.count_CSO_events(CSO_ids,model_outfile)
+            
+            # Saving the other function as pickle:
+            df = self.count_CSO_volume(CSO_ids,model_outfile)
+            pickle_path = '../output/'+self.timestamp
+            pickle_name = '/CSO_vol_{}.pickle'.format(self.sim_num)
+            pickle_out = open(pickle_path + pickle_name,"wb")
+            pickle.dump(df, pickle_out)
+            pickle_out.close()
+        
         self.sim_end_time = datetime.now()
+        
+        
+    
+        
+        
+        # # Output file is defined
+        # model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
+        # if self.CSO_objective == 'volume':
+        #     if self.Custom_CSO_ids == '':
+        #         if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
+        #             objective_value = self.count_CSO_volume([self.CSO_id1],model_outfile)
+        #         elif self.CSO_id3 == '':
+        #             objective_value = self.count_CSO_volume([self.CSO_id1,self.CSO_id2],model_outfile)
+        #         else:
+        #             objective_value = self.count_CSO_volume([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
+        #     else:
+        #         objective_value = self.count_CSO_volume([x.strip(' ') for x in self.Custom_CSO_ids.split(',')]
+        #                                                 ,model_outfile)
+        # elif self.CSO_objective =='frequency':
+        #     if self.Custom_CSO_ids == '':
+        #         if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
+        #             objective_value = self.count_CSO_events([self.CSO_id1],model_outfile)
+        #         elif self.CSO_id3 == '':
+        #             objective_value = self.count_CSO_events([self.CSO_id1,self.CSO_id2],model_outfile)
+        #         else:
+        #             objective_value = self.count_CSO_events([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
+        #     else:
+        #         objective_value = self.count_CSO_events([x.strip(' ') for x in self.Custom_CSO_ids.split(',')]
+        #                                                 ,model_outfile)
+        # self.sim_end_time = datetime.now()
         
         if self.useoptimization == True:
             print('Objective value: {:.2f}'.format(objective_value))
@@ -431,16 +476,20 @@ class Optimizer:
         opt_setting = result['x'][0]
 
         model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
-        if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
-            opt_vol = self.count_CSO_volume([self.CSO_id1],model_outfile)
-            opt_CSO_events = self.count_CSO_events([self.CSO_id1],model_outfile)
-        elif self.CSO_id3 == '':
-            opt_vol = self.count_CSO_volume([self.CSO_id1,self.CSO_id2],model_outfile)
-            opt_CSO_events = self.count_CSO_events([self.CSO_id1,self.CSO_id2],model_outfile)
+        if self.Custom_CSO_ids == '':
+            if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
+                opt_vol = self.count_CSO_volume([self.CSO_id1],model_outfile)
+                opt_CSO_events = self.count_CSO_events([self.CSO_id1],model_outfile)
+            elif self.CSO_id3 == '':
+                opt_vol = self.count_CSO_volume([self.CSO_id1,self.CSO_id2],model_outfile)
+                opt_CSO_events = self.count_CSO_events([self.CSO_id1,self.CSO_id2],model_outfile)
+            else:
+                opt_vol = self.count_CSO_volume([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
+                opt_CSO_events = self.count_CSO_events([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
         else:
-            opt_vol = self.count_CSO_volume([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
-            opt_CSO_events = self.count_CSO_events([self.CSO_id1,self.CSO_id2,self.CSO_id3],model_outfile)
-        
+                opt_vol = self.count_CSO_volume([x.strip(' ') for x in self.Custom_CSO_ids.split(',')],model_outfile)
+                opt_CSO_events = self.count_CSO_events([x.strip(' ') for x in self.Custom_CSO_ids.split(',')],model_outfile)
+
         with open('../output/' + self.timestamp + '/optimized_results.txt','w') as file:
             file.write("""This is the file with the optimization results from NOAH RTC Tool optimization. \n
 The model used is {}\n

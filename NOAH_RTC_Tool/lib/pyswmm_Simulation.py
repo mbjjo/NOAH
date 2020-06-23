@@ -305,7 +305,7 @@ class Optimizer:
         
         self.write_SWMM_controls(x[0],'_tmp')
             # Run simulation
-        with Simulation(self.model_dir +'/'+ self.model_name + '_tmp_.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
+        with Simulation(self.model_dir +'/'+ self.model_name + '_tmp.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
             for step in sim:
                 pass
         

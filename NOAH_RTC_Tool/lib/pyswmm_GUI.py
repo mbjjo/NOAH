@@ -251,30 +251,30 @@ class pyswmm_GUI:
         GUI_elements.create_ToolTip(self.actuator1setting_False_dry,'Type in the setting of the actuator when critical depth is NOT exceeded')
         
         
-        # Simulation period frame
-        self.RTC_period_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Simulation period')
-        self.RTC_period_frame.grid(row =2, column = 2,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
-        # Simulation period
-        Label(self.RTC_period_frame, text = "Start time").grid(row= 1,column =0, sticky = E)
-        Label(self.RTC_period_frame, text = "End time").grid(row= 2,column =0,sticky = E)
-        self.Start_sim_time = Entry(self.RTC_period_frame,width = 15)
-        self.Start_sim_time.grid(row=1, column=1,sticky = W)
-        GUI_elements.create_ToolTip(self.Start_sim_time,'Specify start time of the simulation in the format "yyyy-mm-dd HH:MM".')
-        self.End_sim_time= Entry(self.RTC_period_frame,width = 15)
-        self.End_sim_time.grid(row=2, column=1,sticky = W)
-        GUI_elements.create_ToolTip(self.End_sim_time,'Specify end time of the simulation in the format "yyyy-mm-dd HH:MM".')
+        # # Simulation period frame
+        # self.RTC_period_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Simulation period')
+        # self.RTC_period_frame.grid(row =2, column = 2,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        # # Simulation period
+        # Label(self.RTC_period_frame, text = "Start time").grid(row= 1,column =0, sticky = E)
+        # Label(self.RTC_period_frame, text = "End time").grid(row= 2,column =0,sticky = E)
+        # self.Start_sim_time = Entry(self.RTC_period_frame,width = 15)
+        # self.Start_sim_time.grid(row=1, column=1,sticky = W)
+        # GUI_elements.create_ToolTip(self.Start_sim_time,'Specify start time of the simulation in the format "yyyy-mm-dd HH:MM".')
+        # self.End_sim_time= Entry(self.RTC_period_frame,width = 15)
+        # self.End_sim_time.grid(row=2, column=1,sticky = W)
+        # GUI_elements.create_ToolTip(self.End_sim_time,'Specify end time of the simulation in the format "yyyy-mm-dd HH:MM".')
         
-        self.UseHotstart_sim = Checkbutton(self.RTC_period_frame, text = "Use hotstart", variable = self.param.use_hotstart_sim,command = lambda:GUI_elements.update_Hotstart(self,self.param.use_hotstart_sim,self.hotstart_period_h_sim))
-        # self.UseHotstart.deselect()
-        self.UseHotstart_sim.grid(row = 3, column = 0,columnspan = 2,sticky = W)
-        GUI_elements.create_ToolTip(self.UseHotstart_sim,"Choose whether a Hotstart period is used.")
+        # self.UseHotstart_sim = Checkbutton(self.RTC_period_frame, text = "Use hotstart", variable = self.param.use_hotstart_sim,command = lambda:GUI_elements.update_Hotstart(self,self.param.use_hotstart_sim,self.hotstart_period_h_sim))
+        # # self.UseHotstart.deselect()
+        # self.UseHotstart_sim.grid(row = 3, column = 0,columnspan = 2,sticky = W)
+        # GUI_elements.create_ToolTip(self.UseHotstart_sim,"Choose whether a Hotstart period is used.")
 
-        Label(self.RTC_period_frame, text = "Hotstart period").grid(row=4,column = 0,sticky='E')
-        self.hotstart_period_h_sim = Entry(self.RTC_period_frame,width = 5)
-        self.hotstart_period_h_sim.grid(row=4, column=1,sticky = W)
-        self.hotstart_period_h_sim.insert(END,5)
-        self.hotstart_period_h_sim.configure(state = 'disabled')
-        GUI_elements.create_ToolTip(self.hotstart_period_h_sim,"Specify the length of the hotstart period [hours].")
+        # Label(self.RTC_period_frame, text = "Hotstart period").grid(row=4,column = 0,sticky='E')
+        # self.hotstart_period_h_sim = Entry(self.RTC_period_frame,width = 5)
+        # self.hotstart_period_h_sim.grid(row=4, column=1,sticky = W)
+        # self.hotstart_period_h_sim.insert(END,5)
+        # self.hotstart_period_h_sim.configure(state = 'disabled')
+        # GUI_elements.create_ToolTip(self.hotstart_period_h_sim,"Specify the length of the hotstart period [hours].")
         
 # =============================================================================
 
@@ -340,7 +340,7 @@ class pyswmm_GUI:
         self.Custom_CSO_ids= Entry(self.objective_frame,width = 30)
         self.Custom_CSO_ids.grid(row = 7,column = 0, columnspan = 3)
         GUI_elements.create_ToolTip(self.Custom_CSO_ids,"Provide a list of CSO's. seperate with , \nIf applied the 3 above are ignored")
-        
+        self.Custom_CSO_ids.bind("<FocusOut>", lambda x: GUI_elements.check_custom_ids(self))
         
         # CSO Settings frame
         self.CSO_settings_frame = ttk.LabelFrame(self.Simulation_tab, text = 'CSO settings')
@@ -397,7 +397,7 @@ class pyswmm_GUI:
         self.max_initial_iterations.grid(row=7, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.max_initial_iterations,"Specify the number of simulations that are done in the initial screening of the optimization.")
         
-        Label(self.optimization_frame, text = "Max simplex simulations.").grid(row=8,column = 0,sticky='E')
+        Label(self.optimization_frame, text = "Max simplex simulations").grid(row=8,column = 0,sticky='E')
         self.max_iterations_per_minimization = Entry(self.optimization_frame,width = 5,state='disabled')
         self.max_iterations_per_minimization.grid(row=8, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.max_iterations_per_minimization,"Specify the maximum allowed number of simulations for the second part of the optimization.")

@@ -625,6 +625,16 @@ def update_min_max_calib(self,input_param,min_entry,max_entry,min_val,max_val):
         min_entry.configure(state= 'disabled')
         max_entry.configure(state= 'disabled')
         
+        
+def check_custom_ids(self):
+    if self.Custom_CSO_ids.get()=='':
+        state = 'normal'
+    else:
+        state = 'disabled'
+    self.CSO_id1['state'] = state
+    self.CSO_id2['state'] = state
+    self.CSO_id3['state'] = state
+
 # =============================================================================
 # functions for the GUI buttons
 # =============================================================================

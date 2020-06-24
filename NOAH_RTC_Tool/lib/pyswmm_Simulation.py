@@ -275,7 +275,7 @@ class Optimizer:
                                   x0 = start_value, method='Nelder-Mead',
                                   options = {'disp':True,'maxfev':self.maxiterations})
         else:
-            result = {'Only ran the inital simulations. No optimization was performed afterwards.':[],
+            result = {'Completed':'Only ran the inital simulations. No optimization was performed afterwards.',
                       'x': [start_value]}
         
         # print(result)
@@ -473,7 +473,7 @@ class Optimizer:
         
     def write_optimal_result(self,result,runtime, config_file):
         # Calculate optimial results
-        opt_setting = result['x'][0]
+        opt_setting = float(result['x'][0])
 
         model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
         if self.Custom_CSO_ids == '':
@@ -493,7 +493,7 @@ class Optimizer:
         with open('../output/' + self.timestamp + '/optimized_results.txt','w') as file:
             file.write("""This is the file with the optimization results from NOAH RTC Tool optimization. \n
 The model used is {}\n
-Total time of computation is {} minutes\n
+Total time of computation is {:.1f} minutes\n
 """.format(self.model_name,runtime))
             
             file.write("""The best setting of the RTC setup is {:.2f}.

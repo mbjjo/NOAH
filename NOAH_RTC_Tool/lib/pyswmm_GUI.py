@@ -96,20 +96,20 @@ class pyswmm_GUI:
         self.Simulation_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.Simulation_tab,text = 'RTC setup')
         
-        self.Rain_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.Rain_tab,text = 'rain series')
-        
-        self.Control_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.Control_tab,text = 'Control objective')
-        
-        self.Optimize_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.Optimize_tab,text = 'RTC Optimization')
-        
         self.Calibration_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.Calibration_tab,text = 'Model Calibration')
         
-        self.Result_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.Result_tab,text = 'Results')
+        self.Rain_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.Rain_tab,text = 'rain series')
+        
+        # self.Control_tab = ttk.Frame(self.tabControl)
+        # self.tabControl.add(self.Control_tab,text = 'Control objective')
+        
+        # self.Optimize_tab = ttk.Frame(self.tabControl)
+        # self.tabControl.add(self.Optimize_tab,text = 'RTC Optimization')
+        
+        # self.Result_tab = ttk.Frame(self.tabControl)
+        # self.tabControl.add(self.Result_tab,text = 'Results')
         
 # =============================================================================
 # Define bottom frame  
@@ -152,7 +152,7 @@ class pyswmm_GUI:
         self.weir_active = Radiobutton(self.RBC_frame,text = "Weir",var = self.param.actuator_type,value = 'weir', command = lambda:GUI_elements.orifice_or_pump(self))
         self.weir_active.grid(row=2,column = 1,sticky = W,columnspan = 2,pady = 5)
         self.weir_active.deselect()
-        self.pump_active = Radiobutton(self.RBC_frame,text = "Pump",var = self.param.actuator_type,value = 'pump', command = lambda:GUI_elements.orifice_or_pump(self))
+        self.pump_active = Radiobutton(self.RBC_frame,text = "Pump",var = self.param.actuator_type,value = 'pump', command = lambda:GUI_elements.orifice_or_pump(self),state = 'disabled')
         self.pump_active.grid(row=2,column = 2,sticky = W,columnspan = 2,pady = 5)
         self.pump_active.deselect()
         
@@ -193,23 +193,22 @@ class pyswmm_GUI:
         # self.actuator1setting_False.insert(0,'0')
         GUI_elements.create_ToolTip(self.actuator1setting_False,'Type in the setting of the actuator when critical depth is NOT exceeded')
 
-        self.Dry_flow_frame = ttk.LabelFrame(self.Control_tab, text = '')
+        self.Dry_flow_frame = ttk.LabelFrame(self.Rain_tab, text = 'Dry or Wet flow')
         self.Dry_flow_frame.grid(row = 1, column = 0,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
         
 
-
     # Dry flow or rainfall threshold
-        Label(self.Dry_flow_frame, text = 'Rainfall or Dryflow').grid(row = 3,column = 0,sticky = W,columnspan = 2,pady = 5)
-        Label(self.Dry_flow_frame, text = 'If rainfall exceeds').grid(row = 4,column = 0,sticky = W,columnspan = 1)
-        self.rainfall_threshold = Entry(self.Dry_flow_frame,width = 10)
+        Label(self.Dry_flow_frame, text = 'Wet periods are aactivated when:').grid(row = 3,column = 0,sticky = W,columnspan = 2,pady = 5)
+        Label(self.Dry_flow_frame, text = 'Rainfall exceeds').grid(row = 4,column = 0,sticky = W,columnspan = 1)
+        self.rainfall_threshold = Entry(self.Dry_flow_frame,width = 10,state= 'disabled')
         self.rainfall_threshold.grid(row= 4, column = 1, sticky = W)
         GUI_elements.create_ToolTip(self.rainfall_threshold,'The average precipitation [mm/hr] over a certain duration that activates the rainfall rule')
         Label(self.Dry_flow_frame, text = 'During more than').grid(row = 5,column = 0,sticky = W,columnspan = 1)
-        self.rainfall_time= Entry(self.Dry_flow_frame,width = 10)
+        self.rainfall_time= Entry(self.Dry_flow_frame,width = 10,state= 'disabled')
         self.rainfall_time.grid(row= 5, column = 1, sticky = W)
         GUI_elements.create_ToolTip(self.rainfall_time,'The duration of the rainfall before the Raifall rule applies. [minutes]')
-        Label(self.Dry_flow_frame, text = 'Raingage id').grid(row = 6,column = 0,sticky = W,columnspan = 1)
-        self.raingage1 = Entry(self.Dry_flow_frame,width = 10)
+        Label(self.Dry_flow_frame, text = 'From raingage id').grid(row = 6,column = 0,sticky = W,columnspan = 1)
+        self.raingage1 = Entry(self.Dry_flow_frame,width = 10,state= 'disabled')
         self.raingage1.grid(row = 6, column = 1,sticky = W)
         GUI_elements.create_ToolTip(self.raingage1,'ID of the raingage in the system')
         
@@ -217,7 +216,7 @@ class pyswmm_GUI:
         Label(self.Dry_flow_frame, text = "Rule applied during dry weather flow").grid(row=14,column = 0,columnspan = 3)
 
         Label(self.Dry_flow_frame, text = "IF depth in (Sensor)").grid(row=15,column = 0, sticky = 'W')
-        self.sensor1id_dry = Entry(self.Dry_flow_frame,width = 15)
+        self.sensor1id_dry = Entry(self.Dry_flow_frame,width = 15,state= 'disabled')
         self.sensor1id_dry.bind("<FocusOut>", lambda x: GUI_elements.update(self.sensor1id_dry, self.sensor1id))
         # self.sensor1id_dry = Label(self.Dry_flow_frame,width = 15)
         self.sensor1id_dry.grid(row=15, column=1, sticky = 'W')
@@ -226,26 +225,26 @@ class pyswmm_GUI:
         self.sign = Label(self.Dry_flow_frame, text = ">")
         self.sign.grid(row=15,column = 3)
                 
-        self.sensor1setting_dry = Entry(self.Dry_flow_frame,width = 10)
+        self.sensor1setting_dry = Entry(self.Dry_flow_frame,width = 10,state= 'disabled')
         self.sensor1setting_dry.grid(row=15, column=4, sticky = 'W')
         GUI_elements.create_ToolTip(self.sensor1setting_dry,'Type in the depth that activates the actuator [m]')
         
         # Actuator1
         Label(self.Dry_flow_frame, text = "THEN Actuator").grid(row=16,column = 0, sticky = 'W')
-        self.actuator1id_dry = Entry(self.Dry_flow_frame,width = 15)
+        self.actuator1id_dry = Entry(self.Dry_flow_frame,width = 15,state= 'disabled')
         self.actuator1id_dry.bind("<FocusOut>", lambda x: GUI_elements.update(self.actuator1id_dry, self.actuator1id))
         self.actuator1id_dry.grid(row=16, column=1, sticky = 'W')
         GUI_elements.create_ToolTip(self.actuator1id_dry,'Type in the id of the actuator')
     
         Label(self.Dry_flow_frame, text = "Setting").grid(row=16,column = 3, sticky = 'W')
-        self.actuator1setting_True_dry = Entry(self.Dry_flow_frame,width = 10)
+        self.actuator1setting_True_dry = Entry(self.Dry_flow_frame,width = 10,state= 'disabled')
         self.actuator1setting_True_dry.grid(row=16, column=4, sticky = 'W')
         # self.actuator1setting.insert(0,'1')
         GUI_elements.create_ToolTip(self.actuator1setting_True_dry,'Type in the setting of the actuator when critical depth is exceeded')
         
         Label(self.Dry_flow_frame, text = "ELSE Actuator").grid(row=17,column = 0, sticky = 'W')
         Label(self.Dry_flow_frame, text = "Setting").grid(row=17,column = 3, sticky = 'W')
-        self.actuator1setting_False_dry = Entry(self.Dry_flow_frame,width = 10)
+        self.actuator1setting_False_dry = Entry(self.Dry_flow_frame,width = 10,state= 'disabled')
         self.actuator1setting_False_dry.grid(row=17, column=4, sticky = 'W')
         # self.actuator1setting_False.insert(0,'0')
         GUI_elements.create_ToolTip(self.actuator1setting_False_dry,'Type in the setting of the actuator when critical depth is NOT exceeded')
@@ -282,27 +281,27 @@ class pyswmm_GUI:
         
         Label(self.Rain_tab, text = "Contains a tool for designing rain events that can be imported to the SWMM model", bg = 'white').grid(row=0,column = 0, columnspan = 3, pady  =8)
                 
-        self.hotstart_button = Button(self.Rain_tab, text ='Choose hotstart file',width = 15, command = lambda:msg.showerror('','Hotstart is not implemented yet'))
-        self.hotstart_button.grid(row = 2, column = 1,sticky = 'W')
+        self.hotstart_button = Button(self.Rain_tab, text ='Choose hotstart file',width = 15, command = lambda:msg.showerror('','Hotstart is not implemented for RTC yet.'))
+        self.hotstart_button.grid(row = 2, column = 0,sticky = 'W')
         GUI_elements.create_ToolTip(self.hotstart_button,"Choose the SWMM model that shoul be used for the simulations")
         
         # Define frame 
-        self.Rain_event_frame = ttk.LabelFrame(self.Rain_tab, text = 'Definition of rain event')
-        self.Rain_event_frame.grid(row = 2, column = 0,rowspan = 1, pady =5, padx = 15,sticky = NSEW)
+        # self.Rain_event_frame = ttk.LabelFrame(self.Rain_tab, text = 'Definition of rain event')
+        # self.Rain_event_frame.grid(row = 2, column = 0,rowspan = 1, pady =5, padx = 15,sticky = NSEW)
         
-        Label(self.Rain_event_frame, text = "Rain event minimum intensity").grid(row=0,column = 0, sticky = 'W')
-        self.rain_event_intensity = Entry(self.Rain_event_frame,width = 10)
-        self.rain_event_intensity.grid(row=0, column=1, sticky = 'W')
-        # self.rain_event_intensity.insert(0,'1')
-        GUI_elements.create_ToolTip(self.rain_event_intensity ,'Type in the minimum intensity of rain that is counted as an event [Unit]')
+        # Label(self.Rain_event_frame, text = "Rain event minimum intensity").grid(row=0,column = 0, sticky = 'W')
+        # self.rain_event_intensity = Entry(self.Rain_event_frame,width = 10)
+        # self.rain_event_intensity.grid(row=0, column=1, sticky = 'W')
+        # # self.rain_event_intensity.insert(0,'1')
+        # GUI_elements.create_ToolTip(self.rain_event_intensity ,'Type in the minimum intensity of rain that is counted as an event [Unit]')
         
-        Label(self.Rain_event_frame, text = "Rain event minimum duration").grid(row=1,column = 0, sticky = 'W')
-        self.rain_event_duration = Entry(self.Rain_event_frame,width = 10)
-        self.rain_event_duration.grid(row=1, column=1, sticky = 'W')
-        # self.rain_event_intensity.insert(0,'1')
-        GUI_elements.create_ToolTip(self.rain_event_duration,'Type in the minimum duration of continous rain that is counted as an event [Unit]')
+        # Label(self.Rain_event_frame, text = "Rain event minimum duration").grid(row=1,column = 0, sticky = 'W')
+        # self.rain_event_duration = Entry(self.Rain_event_frame,width = 10)
+        # self.rain_event_duration.grid(row=1, column=1, sticky = 'W')
+        # # self.rain_event_intensity.insert(0,'1')
+        # GUI_elements.create_ToolTip(self.rain_event_duration,'Type in the minimum duration of continous rain that is counted as an event [Unit]')
         
-        Label(self.Rain_event_frame, text = "More options...").grid(row=2,column = 0, sticky = 'W')
+        # Label(self.Rain_event_frame, text = "More options...").grid(row=2,column = 0, sticky = 'W')
         # self.rain_event_duration = Entry(self.Rain_event_frame,width = 10)
         # self.rain_event_duration.grid(row=1, column=1, sticky = 'W')
         # # self.rain_event_intensity.insert(0,'1')
@@ -311,7 +310,7 @@ class pyswmm_GUI:
 # =============================================================================
 # Creatng the content for the objective tab 
 
-        Label(self.Control_tab,text = 'Choose the objective of the optimization.').grid(row = 0,columnspan = 3)
+        # Label(self.Control_tab,text = 'Choose the objective of the optimization.').grid(row = 0,columnspan = 3)
         
         # Objective function frame
         self.objective_frame= ttk.LabelFrame(self.Simulation_tab,width=385, height=460, text = 'Control objective')
@@ -378,7 +377,7 @@ class pyswmm_GUI:
         self.opt_method.grid(row=3, column=1)
         
         Label(self.optimization_frame, text = "Parameter to be optimized").grid(row=4,column = 0,sticky='E')
-        self.optimized_parameter= ttk.Combobox(self.optimization_frame,width = 20,values = ('Activation depth','Sensor location', 'Sensor location and activation depth'),state = 'disabled')
+        self.optimized_parameter= ttk.Combobox(self.optimization_frame,width = 20,values = ('Activation-depth'), state = 'disabled')#,'Sensor location', 'Sensor location and activation depth'),state = 'disabled')
         self.optimized_parameter.bind("<<ComboboxSelected>>",lambda x: GUI_elements.enable_sensor_location(self))
         self.optimized_parameter.grid(row=4, column=1)
         
@@ -402,18 +401,18 @@ class pyswmm_GUI:
         self.max_iterations_per_minimization.grid(row=8, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.max_iterations_per_minimization,"Specify the maximum allowed number of simulations for the second part of the optimization.")
         
-         # Sensor location frame
-        self.sensor_loc_frame = ttk.LabelFrame(self.Optimize_tab, text = 'Possible sensor locations')
-        self.sensor_loc_frame.grid(row =1, column = 1,rowspan = 20, pady =5, padx = 5,sticky = NSEW)
+        #  # Sensor location frame
+        # self.sensor_loc_frame = ttk.LabelFrame(self.Optimize_tab, text = 'Possible sensor locations')
+        # self.sensor_loc_frame.grid(row =1, column = 1,rowspan = 20, pady =5, padx = 5,sticky = NSEW)
         
-        Label(self.sensor_loc_frame, text = "Select possible sensor locations").grid(row=0,column = 0,sticky = W)
-        self.sensor_loc1 = Entry(self.sensor_loc_frame,width = 15)
-        self.sensor_loc1.grid(row = 1, column = 0,sticky = W)
-        self.sensor_loc2 = Entry(self.sensor_loc_frame,width = 15)
-        self.sensor_loc2.grid(row = 2, column = 0,sticky = W)
-        self.sensor_loc3 = Entry(self.sensor_loc_frame,width = 15)
-        self.sensor_loc3.grid(row = 3, column = 0,sticky = W)
-        GUI_elements.create_ToolTip(self.sensor_loc_frame,"Define the ID of nodes with possibility of a sensor.")
+        # Label(self.sensor_loc_frame, text = "Select possible sensor locations").grid(row=0,column = 0,sticky = W)
+        # self.sensor_loc1 = Entry(self.sensor_loc_frame,width = 15)
+        # self.sensor_loc1.grid(row = 1, column = 0,sticky = W)
+        # self.sensor_loc2 = Entry(self.sensor_loc_frame,width = 15)
+        # self.sensor_loc2.grid(row = 2, column = 0,sticky = W)
+        # self.sensor_loc3 = Entry(self.sensor_loc_frame,width = 15)
+        # self.sensor_loc3.grid(row = 3, column = 0,sticky = W)
+        # GUI_elements.create_ToolTip(self.sensor_loc_frame,"Define the ID of nodes with possibility of a sensor.")
         # self.sensor_loc1.insert(END,self.sensor1id.get())
              
 # =============================================================================
@@ -595,42 +594,42 @@ class pyswmm_GUI:
 # =============================================================================
 # Content for the results tab
 
-        # Parameters for comparison: 
-        self.Result_parameter_frame = ttk.LabelFrame(self.Result_tab, text = 'Parameters for comparison')
-        self.Result_parameter_frame.grid(row = 1, column = 0,rowspan = 5, columnspan  =5, pady =5, padx = 15,sticky = NSEW)
+        # # Parameters for comparison: 
+        # self.Result_parameter_frame = ttk.LabelFrame(self.Result_tab, text = 'Parameters for comparison')
+        # self.Result_parameter_frame.grid(row = 1, column = 0,rowspan = 5, columnspan  =5, pady =5, padx = 15,sticky = NSEW)
         
-        self.result_CSO_vol = Checkbutton(self.Result_parameter_frame, text = "Compare CSO volumne", variable = self.param.results_vol)
-        self.result_CSO_vol.grid(row=0, column=0, sticky = 'W')
-        self.result_CSO_vol.deselect()
+        # self.result_CSO_vol = Checkbutton(self.Result_parameter_frame, text = "Compare CSO volumne", variable = self.param.results_vol)
+        # self.result_CSO_vol.grid(row=0, column=0, sticky = 'W')
+        # self.result_CSO_vol.deselect()
         
-        self.result_CSO_vol_id_obj_fun = Radiobutton(self.Result_parameter_frame, text = "Same nodes as in objective function", var = self.param.results_CSO_vol_id, value = 'objective_function')
-        self.result_CSO_vol_id_obj_fun.grid(row = 0, column = 1, sticky = 'W')
-        self.result_CSO_vol_id_obj_fun.select()
+        # self.result_CSO_vol_id_obj_fun = Radiobutton(self.Result_parameter_frame, text = "Same nodes as in objective function", var = self.param.results_CSO_vol_id, value = 'objective_function')
+        # self.result_CSO_vol_id_obj_fun.grid(row = 0, column = 1, sticky = 'W')
+        # self.result_CSO_vol_id_obj_fun.select()
         
-        self.result_CSO_vol_id_custom = Radiobutton(self.Result_parameter_frame, text = "Custom nodes", var = self.param.results_CSO_vol_id, value = 'new_nodes')
-        self.result_CSO_vol_id_custom.grid(row = 0, column = 2, sticky = 'W')
-        self.result_CSO_vol_id_custom.deselect()
+        # self.result_CSO_vol_id_custom = Radiobutton(self.Result_parameter_frame, text = "Custom nodes", var = self.param.results_CSO_vol_id, value = 'new_nodes')
+        # self.result_CSO_vol_id_custom.grid(row = 0, column = 2, sticky = 'W')
+        # self.result_CSO_vol_id_custom.deselect()
         
-        self.result_CSO_freq = Checkbutton(self.Result_parameter_frame, text = "Compare number of CSO events", variable = self.param.results_freq)
-        self.result_CSO_freq.grid(row=1, column=0, sticky = 'W')
-        self.result_CSO_freq.deselect()
+        # self.result_CSO_freq = Checkbutton(self.Result_parameter_frame, text = "Compare number of CSO events", variable = self.param.results_freq)
+        # self.result_CSO_freq.grid(row=1, column=0, sticky = 'W')
+        # self.result_CSO_freq.deselect()
         
-        Label(self.Result_parameter_frame, text = "More options...").grid(row=4,column = 0, sticky = 'W')
+        # Label(self.Result_parameter_frame, text = "More options...").grid(row=4,column = 0, sticky = 'W')
         
-        # Benchmark for comparison:
-        self.Benchmark_model = Radiobutton(self.Result_tab, text = "Compute new benchmark model", var = self.param.Benchmark_model, value = 'new')
-        self.Benchmark_model.select()
-        self.Benchmark_model.grid(row = 9, column = 0,sticky = W)
-        GUI_elements.create_ToolTip(self.Benchmark_model,"Select if a benchmark simulation is needed for comparison of the results with and without RTC.")
+        # # Benchmark for comparison:
+        # self.Benchmark_model = Radiobutton(self.Result_tab, text = "Compute new benchmark model", var = self.param.Benchmark_model, value = 'new')
+        # self.Benchmark_model.select()
+        # self.Benchmark_model.grid(row = 9, column = 0,sticky = W)
+        # GUI_elements.create_ToolTip(self.Benchmark_model,"Select if a benchmark simulation is needed for comparison of the results with and without RTC.")
         
-        self.Benchmark_model_existing = Radiobutton(self.Result_tab, text = "Compute new benchmark model", var = self.param.Benchmark_model, value = 'existing')
-        self.Benchmark_model_existing.deselect()
-        self.Benchmark_model_existing.grid(row = 9, column = 1,sticky = W)
-        GUI_elements.create_ToolTip(self.Benchmark_model_existing,"Select if a benchmark simulation already exists for comparison of the results with and without RTC.")
+        # self.Benchmark_model_existing = Radiobutton(self.Result_tab, text = "Compute new benchmark model", var = self.param.Benchmark_model, value = 'existing')
+        # self.Benchmark_model_existing.deselect()
+        # self.Benchmark_model_existing.grid(row = 9, column = 1,sticky = W)
+        # GUI_elements.create_ToolTip(self.Benchmark_model_existing,"Select if a benchmark simulation already exists for comparison of the results with and without RTC.")
         
-        self.Benchmark_model_file = Button(self.Result_tab, text ='Select output file for comparison', width = 30, command = lambda:msg.showerror('','Not implemented'))
-        self.Benchmark_model_file.grid(row = 10, column = 1 ,sticky = W, padx = 5,columnspan = 2)
-        GUI_elements.create_ToolTip(self.Benchmark_model_file,"Choose an output file from an already run SWMM model for comparison.")
+        # self.Benchmark_model_file = Button(self.Result_tab, text ='Select output file for comparison', width = 30, command = lambda:msg.showerror('','Not implemented'))
+        # self.Benchmark_model_file.grid(row = 10, column = 1 ,sticky = W, padx = 5,columnspan = 2)
+        # GUI_elements.create_ToolTip(self.Benchmark_model_file,"Choose an output file from an already run SWMM model for comparison.")
         
 # =============================================================================
 # Run the program

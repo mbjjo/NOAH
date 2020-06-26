@@ -47,8 +47,8 @@ import tkinter as tk
 from tkinter import *
 from tkinter import Tk, ttk, filedialog, scrolledtext,messagebox
 from tkinter import messagebox as msg
-from tkintertable.Tables import TableCanvas
-from tkintertable.TableModels import TableModel
+# from tkintertable.Tables import TableCanvas
+# from tkintertable.TableModels import TableModel
 
 
 class pyswmm_GUI:
@@ -349,15 +349,17 @@ class pyswmm_GUI:
         self.CSO_event_seperation = Entry(self.CSO_settings_frame,width = 5)
         self.CSO_event_seperation.grid(row = 0, column = 1,sticky = W)
         self.CSO_event_seperation.insert(END, '12')
+        self.CSO_event_seperation['state'] = 'disabled'
         GUI_elements.create_ToolTip(self.CSO_event_seperation,"Define the minimum time (hours) seperating two events.")
         Label(self.CSO_settings_frame, text = "Maximum duration of CSO event").grid(row=1,column = 0,sticky='E')
         self.CSO_event_duration = Entry(self.CSO_settings_frame,width = 5)
         self.CSO_event_duration.grid(row = 1, column = 1,sticky = W)
         self.CSO_event_duration.insert(END, '24')
+        self.CSO_event_duration['state'] = 'disabled'
         GUI_elements.create_ToolTip(self.CSO_event_duration,"Define the time (hours) before an event is counted as more events.")
         Label(self.CSO_settings_frame, text = "Define CSO as").grid(row=2,column = 0,sticky='E')
         self.CSO_type = ttk.Combobox(self.CSO_settings_frame,width = 20,values = ('Outflow from CSO structure','Flodding above ground'),state = 'readonly')
-        self.CSO_type.current(0)
+        self.CSO_type.current(1)
         self.CSO_type .grid(row=2, column=1)      
 
 # =============================================================================

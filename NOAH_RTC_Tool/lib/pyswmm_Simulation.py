@@ -83,6 +83,7 @@ class Optimizer:
             self.CSO_event_duration = float(config['Settings']['Max_CSO_duration'])
         except ValueError:
             pass
+        self.CSO_type = config['Settings']['CSO_type']
         self.model_name = config['Model']['modelname']
         self.model_dir = config['Model']['modeldirectory']
         #    rain_series = config['Model']['rain_series']
@@ -350,7 +351,7 @@ class Optimizer:
             CSO_ids = [i for i in [self.CSO_id1,self.CSO_id2,self.CSO_id3] if i] 
         else:
             CSO_ids = [x.strip(' ') for x in self.Custom_CSO_ids.split(',')]
-        
+
         if self.CSO_objective == 'volume':
             objective_value = self.count_CSO_volume(CSO_ids,model_outfile)
             
@@ -376,10 +377,6 @@ class Optimizer:
             pickle_out.close()
         
         self.sim_end_time = datetime.now()
-        
-        
-    
-        
         
         # # Output file is defined
         # model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
@@ -418,9 +415,11 @@ class Optimizer:
 
     # Compute CSO volume
     def count_CSO_volume(self,CSO_ids, model_outfile): 
-    # Note that the VSO's are now computed as regular nodes where flooding simulates overflow. 
-    # If CSO's are outlets the 'Flow_lost_flooding' should be changed to 'Total_inflow'
-        df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],'Flow_lost_flooding']))for i in range(len(CSO_ids))),axis = 1)
+        if self.CSO_type == 'Outflow from CSO structure':
+            CSO_type = 'Total_inflow'
+        elif self.CSO_type == 'Flodding above ground':
+            CSO_type = 'Flow_lost_flooding'
+        df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],CSO_type]))for i in range(len(CSO_ids))),axis = 1)
         df = df*self.report_times_steps*60 
         CSO_volume = df.sum().sum()
         return CSO_volume 
@@ -431,14 +430,21 @@ class Optimizer:
     def count_CSO_events(self,CSO_ids, model_outfile):
         # create the dataframe with the 
         max_event_length = 1 # day
-        df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],'Flow_lost_flooding']))for i in range(len(CSO_ids))),axis = 1)
+        CSO_event_seperation = 12 # hours
+        
+        if self.CSO_type == 'Outflow from CSO structure':
+            CSO_type = 'Total_inflow'
+        elif self.CSO_type == 'Flodding above ground':
+            CSO_type = 'Flow_lost_flooding'
+
+        df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],CSO_type]))for i in range(len(CSO_ids))),axis = 1)
         # df is CMS therefore this are converted to m3/timestep. 
         df = df*60*self.report_times_steps
         
         # Set all timesteps with flooding to 1
         CSO_YesNo_df = df.mask(df>0,other = 1)
         # Time between events is assumed to be 12 hours before they are counted as seperate
-        time_between_events= 12*60/self.report_times_steps
+        time_between_events= CSO_event_seperation*60/self.report_times_steps
         
         # Get df with 1 at every event start 
         CSO_start_df = CSO_YesNo_df.where(np.logical_and(CSO_YesNo_df>0,CSO_YesNo_df.rolling(int(time_between_events),min_periods=0).sum()==1),other=0)

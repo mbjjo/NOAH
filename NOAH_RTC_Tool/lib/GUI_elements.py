@@ -56,7 +56,8 @@ def write_config(self):
                           'System_Units': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.FLOW_UNITS, 
                           'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP,
                           'Time_seperating_CSO_events':self.CSO_event_seperation.get(),
-                          'Max_CSO_duration':self.CSO_event_duration.get()
+                          'Max_CSO_duration':self.CSO_event_duration.get(),
+                          'CSO_type':self.CSO_type.get()
                           }
     
     config['Model'] = {'Modelname':self.param.model_name.get(),
@@ -188,6 +189,7 @@ class Read_Config_Parameters:
             self.CSO_event_duration = float(config['Settings']['Max_CSO_duration'])
         except ValueError:
             pass
+        self.CSO_type = config['Settings']['CSO_type']
         self.model_name = config['Model']['modelname']
         self.model_dir = config['Model']['modeldirectory']
 
@@ -402,7 +404,7 @@ def Calibrate(config_file):
                                                                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
                                                                       observations_loaded,
                                                                       objective_func,
-                                                                      max_iterations = None,
+                                                                      max_iterations = inp.Simplex_simulations,
                                                                       only_best = False)
 
         

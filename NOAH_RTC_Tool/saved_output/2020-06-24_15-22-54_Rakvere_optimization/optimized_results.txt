@@ -1,0 +1,90 @@
+This is the file with the optimization results from NOAH RTC Tool optimization. 
+
+The model used is Rakvere_v3_cal_RTCready
+
+Total time of computation is 705.7 minutes
+
+The best setting of the RTC setup is 0.51.
+This will result in a CSO volume from the specified CSO structures of 1857419 m3 and 37.0 CSO events 
+
+
+Optimization output: 
+ final_simplex: (array([[0.5125  ],
+       [0.509375]]), array([36., 37.]))
+           fun: 36.0
+       message: 'Maximum number of function evaluations has been exceeded.'
+          nfev: 10
+           nit: 4
+        status: 1
+       success: False
+             x: array([0.5125])
+
+The used config file is 
+
+[Settings]
+system_units = LPS
+reporting_timesteps = 00:10:00
+time_seperating_cso_events = 12
+max_cso_duration = 24
+
+[Model]
+modelname = Rakvere_v3_cal_RTCready
+modeldirectory = F:/Data/s164310/DATA/NOAH_Models
+rain series = 
+
+[RuleBasedControl]
+actuator_type = weir
+sensor1_id = 22069
+sensor1_critical_depth = 1
+actuator1_id = weir_2
+actuator1_target_setting_true = 0
+actuator1_target_setting_false = 1
+sensor1_critical_depth_dryflow = 
+actuator1_target_setting_true_dryflow = 
+actuator1_target_setting_false_dryflow = 
+raingage1 = 
+rainfall_threshold_value = 
+rainfall_threshold_duration = 
+
+[Optimization]
+useoptimization = True
+optimization_method = Two-step-optimization
+cso_objective = frequency
+cso_id1 = 
+cso_id2 = 
+cso_id3 = 
+custom_cso_ids = 22065, 14, 26589, 5619, 27082, 19260, 5832, 42
+optimized_parameter = Activation-depth
+expected_min_xvalue = 0
+expected_max_xvalue = 3
+max_initial_iterations = 6
+max_iterations_per_minimization = 10
+
+[Calibration]
+calibrate_perc_imp = False
+percent_imp_min = 0.5
+percent_imp_max = 1.5
+calibrate_width = False
+width_min = 0.2
+width_max = 5.0
+calibrate_initial_loss = False
+initial_loss_min = 0.33
+initial_loss_max = 3.0
+calibrate_roughness_pipe = False
+roughness_pipe_min = 0.7
+roughness_pipe_max = 1.3
+observations = 
+observations_directory = 
+calibration_sensor = 
+objective_function = 
+calibration_start = 
+calibration_end = 
+use_hotstart = False
+hotstart_period = 5
+calibratied_area = all
+lhs_simulations = 
+simplex_simulations = 
+optimization_method = 
+output_time_step = 
+save_file_as = Rakvere_v3_cal_RTCready_Calibrated
+

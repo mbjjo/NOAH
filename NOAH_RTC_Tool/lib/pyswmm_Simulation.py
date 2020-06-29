@@ -40,7 +40,7 @@ class Optimizer:
         os.mkdir('../output/'+self.timestamp)   
         model_outfile = '../output/' + str(self.timestamp) + '/' + str(self.model_name) + '.out'
         
-        # self.Redefine_Timeseries()
+        self.Redefine_Timeseries()
         
         if self.useoptimization == False:
             result = self.simulation([self.sensor1_critical_depth]) # single simulation
@@ -179,8 +179,9 @@ class Optimizer:
             New_controls_section['[CONTROLS]'][2] = 'THEN PUMP {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_True))
             New_controls_section['[CONTROLS]'][3] = 'ELSE PUMP {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_False))
         # Create a temporary file with the adjusted path
-        new_file = self.model_dir +'/'+ self.model_name + filename+ '.inp'
-        shutil.copyfile(self.model_dir +'/'+ self.model_name + '.inp',new_file)
+        old_file = self.model_dir +'/'+ self.model_name + '_tmp' + '.inp'
+        new_file = self.model_dir +'/'+ self.model_name + '_tmp' + filename + '.inp'
+        shutil.copyfile(old_file,new_file)
     
         #Overwrite the CONTROLS section of the new model with the adjusted data
         with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
@@ -230,7 +231,7 @@ class Optimizer:
         New_Timeseries.dropna(inplace = True)
         
         # Create a temporary file with the adjusted path
-        new_file = inp_file + '_tmp_.inp'
+        new_file = inp_file + '_tmp.inp'
         shutil.copyfile(baseline, path + '/' + new_file)
         print('path:' + path ) 
         print('new_file:' + new_file) 
@@ -239,8 +240,7 @@ class Optimizer:
         with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
             replace_inp_section(path + '/' + new_file, '[TIMESERIES]', New_Timeseries)
         timeserie_time_stop = datetime.now()
-        print('redefine timeseries Time {:}'.format(timeserie_time_stop-timeserie_time_start))
-        
+                
     def Two_step_optimizer(self):
         """
         Required inputs:

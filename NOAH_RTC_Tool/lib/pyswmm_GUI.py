@@ -118,12 +118,12 @@ class pyswmm_GUI:
         self.run_button.grid(row = 6, column = 0,sticky = W,pady = 5, padx = 5)
         GUI_elements.create_ToolTip(self.run_button,'Runs the simulation with the configuration file.')
         
-        self.write_config = Button(self.Simulation_tab, text ='Save config', width = 15, command = lambda:GUI_elements.write_config(self))
-        self.write_config.grid(row = 6, column = 1,sticky = W,pady = 5, padx = 5)
-        GUI_elements.create_ToolTip(self.write_config,"Save the configuration file without running.")
+        # self.write_config = Button(self.Simulation_tab, text ='Save config', width = 15, command = lambda:GUI_elements.write_config(self))
+        # self.write_config.grid(row = 6, column = 1,sticky = W,pady = 5, padx = 5)
+        # GUI_elements.create_ToolTip(self.write_config,"Save the configuration file without running.")
         
         self.overwrite_button_sim = Checkbutton(self.Simulation_tab, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
-        self.overwrite_button_sim.deselect()    
+        self.overwrite_button_sim.select()    
         self.overwrite_button_sim.grid(row = 5, column = 0,sticky = W, columnspan = 3)
         GUI_elements.create_ToolTip(self.overwrite_button_sim,"Check if the parameters specified in the GUI should be written to configuration file. Else the existing file is used.")
 
@@ -131,7 +131,7 @@ class pyswmm_GUI:
         # self.SWMM_results.grid(row = 5, column = 2,sticky = W,pady = 5, padx = 5)
         # GUI_elements.create_ToolTip(self.SWMM_results,"Write the current RTC setup (specified in the simulation tab) to a SWMM file.")
         
-        Button(self.Simulation_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 6, column = 2,sticky =E, padx = 5)
+        Button(self.Simulation_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 6, column = 1,sticky =E, padx = 5)
         
 # =============================================================================
     # Create content for tabs
@@ -317,23 +317,23 @@ class pyswmm_GUI:
         self.objective_frame.grid(row =1, column = 2,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
         
         # Define radiobuttons for CSO objective
-        self.CSO_volume = Radiobutton(self.objective_frame,text = "Reduce CSO volume",var = self.param.CSO_objective,value = 'volume')
+        self.CSO_volume = Radiobutton(self.objective_frame,text = "Reduce volume",var = self.param.CSO_objective,value = 'volume')
         self.CSO_volume.grid(row = 1,column = 0,columnspan = 2,sticky = W)
         self.CSO_volume.select()
-        self.CSO_freq = Radiobutton(self.objective_frame,text = "Reduce CSO frequency",var = self.param.CSO_objective,value = 'frequency')
+        self.CSO_freq = Radiobutton(self.objective_frame,text = "Reduce frequency",var = self.param.CSO_objective,value = 'frequency')
         self.CSO_freq.grid(row=2,column = 0,columnspan = 2,sticky = W)
         # self.CSO_freq.select()
 
-        Label(self.objective_frame,text = "Reduce CSO from").grid(row=3,column = 0, columnspan = 1)
+        Label(self.objective_frame,text = "from ID's").grid(row=3,column = 0, columnspan = 1)
         self.CSO_id1 = Entry(self.objective_frame,width = 15)
         self.CSO_id1.grid(row = 3,column = 1)
         self.CSO_id2 = Entry(self.objective_frame,width = 15)
         self.CSO_id2.grid(row = 4,column = 1)
         self.CSO_id3 = Entry(self.objective_frame,width = 15)
         self.CSO_id3.grid(row = 5,column = 1)
-        GUI_elements.create_ToolTip(self.CSO_id1,"Write the node ID of the CSO struture")
-        GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture")
-        GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture")
+        GUI_elements.create_ToolTip(self.CSO_id1,"Write the node ID of the CSO struture or flodded node")
+        GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture or flodded node")
+        GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture or flodded node")
         
         Label(self.objective_frame,text = "OR provide list:").grid(row=6,column = 0, columnspan = 1)
         self.Custom_CSO_ids= Entry(self.objective_frame,width = 30)
@@ -342,25 +342,25 @@ class pyswmm_GUI:
         self.Custom_CSO_ids.bind("<FocusOut>", lambda x: GUI_elements.check_custom_ids(self))
         
         # CSO Settings frame
-        self.CSO_settings_frame = ttk.LabelFrame(self.Simulation_tab, text = 'CSO settings')
+        self.CSO_settings_frame = ttk.LabelFrame(self.Simulation_tab, text = 'Event settings')
         self.CSO_settings_frame.grid(row = 4, column = 0,rowspan = 1, columnspan = 2, pady =5, padx = 5,sticky= NSEW)
         
-        Label(self.CSO_settings_frame, text = "Time seperation CSO events").grid(row=0,column = 0,sticky = E)
+        Label(self.CSO_settings_frame, text = "Time seperation between events").grid(row=0,column = 0,columnspan = 2, sticky = E)
         self.CSO_event_seperation = Entry(self.CSO_settings_frame,width = 5)
-        self.CSO_event_seperation.grid(row = 0, column = 1,sticky = W)
+        self.CSO_event_seperation.grid(row = 0, column = 2,sticky = W)
         self.CSO_event_seperation.insert(END, '12')
         self.CSO_event_seperation['state'] = 'disabled'
         GUI_elements.create_ToolTip(self.CSO_event_seperation,"Define the minimum time (hours) seperating two events.")
-        Label(self.CSO_settings_frame, text = "Maximum duration of CSO event").grid(row=1,column = 0,sticky='E')
+        Label(self.CSO_settings_frame, text = "Maximum duration of an event").grid(row=1,column = 0,columnspan = 2, sticky='E')
         self.CSO_event_duration = Entry(self.CSO_settings_frame,width = 5)
-        self.CSO_event_duration.grid(row = 1, column = 1,sticky = W)
+        self.CSO_event_duration.grid(row = 1, column = 2,sticky = W)
         self.CSO_event_duration.insert(END, '24')
         self.CSO_event_duration['state'] = 'disabled'
         GUI_elements.create_ToolTip(self.CSO_event_duration,"Define the time (hours) before an event is counted as more events.")
-        Label(self.CSO_settings_frame, text = "Define CSO as").grid(row=2,column = 0,sticky='E')
-        self.CSO_type = ttk.Combobox(self.CSO_settings_frame,width = 20,values = ('Outflow from CSO structure','Flodding above ground'),state = 'readonly')
+        Label(self.CSO_settings_frame, text = "Define event as").grid(row=2,column = 0,sticky=E)
+        self.CSO_type = ttk.Combobox(self.CSO_settings_frame,width = 35,values = ('Outflow from CSO structure','Flodding above ground from node'),state = 'readonly')
         self.CSO_type.current(1)
-        self.CSO_type .grid(row=2, column=1)      
+        self.CSO_type.grid(row=2, column=1,columnspan = 2, sticky = E)      
 
 # =============================================================================
 # Creatng the content for the optimization tab 
@@ -494,12 +494,7 @@ class pyswmm_GUI:
         self.sensor_calib.grid(row=3, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.sensor_calib,"Specify the ID of the sensor.")
 
-        # Objection function
-        Label(self.calib_obs_frame, text = "Objective function").grid(row=4,column = 0,sticky = E)
-        self.Cal_section = ttk.Combobox(self.calib_obs_frame,width = 20,values = ('NSE','RMSE','MAE','Abs peak','Corr peak'),state = 'readonly')
-        self.Cal_section.grid(row=4, column=1)
-        GUI_elements.create_ToolTip(self.Cal_section,"Choose objective function.")
-        
+          
         # Clibration period frame
         self.calib_period_frame = ttk.LabelFrame(self.Calibration_tab, text = 'Calibration period')
         self.calib_period_frame.grid(row =1, column = 3,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
@@ -514,17 +509,17 @@ class pyswmm_GUI:
         self.End_calib_time.grid(row=2, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.End_calib_time,'Specify end time of the calibrated period in the format "yyyy-mm-dd HH:MM".')
         
-        self.UseHotstart = Checkbutton(self.calib_period_frame, text = "Use hotstart", variable = self.param.use_hotstart,command = lambda:GUI_elements.update_Hotstart(self,self.param.use_hotstart,self.hotstart_period_h))
+        self.UseHotstart = Checkbutton(self.calib_period_frame, text = "Use initial period", variable = self.param.use_hotstart,command = lambda:GUI_elements.update_Hotstart(self,self.param.use_hotstart,self.hotstart_period_h))
         # self.UseHotstart.deselect()
         self.UseHotstart.grid(row = 3, column = 0,columnspan = 2,sticky = W)
-        GUI_elements.create_ToolTip(self.UseHotstart ,"Choose whether a Hotstart period is used.")
+        GUI_elements.create_ToolTip(self.UseHotstart ,"Choose whether an initial period is used.")
 
-        Label(self.calib_period_frame, text = "Hotstart period").grid(row=4,column = 0,sticky='E')
+        Label(self.calib_period_frame, text = "Initial period").grid(row=4,column = 0,sticky='E')
         self.hotstart_period_h = Entry(self.calib_period_frame,width = 5)
         self.hotstart_period_h.grid(row=4, column=1,sticky = W)
         self.hotstart_period_h.insert(END,5)
         self.hotstart_period_h.configure(state = 'disabled')
-        GUI_elements.create_ToolTip(self.hotstart_period_h,"Specify the length of the hotstart period [hours].")
+        GUI_elements.create_ToolTip(self.hotstart_period_h,"Specify the length of the initial period [hours].")
         #Calibration area frame
         self.calib_area_frame = ttk.LabelFrame(self.Calibration_tab, text = 'Calibration area')
         self.calib_area_frame.grid(row =2, column = 3,columnspan =1, pady =5, padx = 5,sticky = NSEW)
@@ -549,25 +544,30 @@ class pyswmm_GUI:
         self.settings_calib= ttk.LabelFrame(self.Calibration_tab, text = 'Settings')
         self.settings_calib.grid(row =3, column = 0,columnspan =3, pady =5, padx = 5,sticky = NSEW)
 
-        Label(self.settings_calib, text = "Number of lhs simulations").grid(row=1,column = 0,sticky='E')
-        self.max_initial_iterations_calib = Entry(self.settings_calib,width = 5)
-        self.max_initial_iterations_calib.grid(row=1, column=1,sticky = W)
-        GUI_elements.create_ToolTip(self.max_initial_iterations_calib,"Specify the number of simulations that are done in the latin hypercube sample of the optimization.")
+         # Objection function
+        Label(self.settings_calib, text = "Objective function").grid(row=0,column = 0,sticky = E)
+        self.Cal_section = ttk.Combobox(self.settings_calib,width = 20,values = ('NSE','RMSE','MAE','ARPE','User defined function'),state = 'readonly')
+        self.Cal_section.grid(row=0, column=1)
+        GUI_elements.create_ToolTip(self.Cal_section,"Choose objective function.")
         
-        Label(self.settings_calib, text = "Optimization method").grid(row=0,column = 0,sticky='E')
+        Label(self.settings_calib, text = "Optimization method").grid(row=1,column = 0,sticky='E')
         self.optimization_method_calib= ttk.Combobox(self.settings_calib,width = 20,values = ('lhs','Simplex','Combined'),state = 'readonly')
         self.optimization_method_calib.bind("<<ComboboxSelected>>",lambda x: GUI_elements.enable_calib_method(self))
-        self.optimization_method_calib.grid(row=0, column=1)
+        self.optimization_method_calib.grid(row=1, column=1)
         GUI_elements.create_ToolTip(self.optimization_method_calib,"Select optimization method.")
-        
-        Label(self.settings_calib, text = "Max simplex simulations").grid(row=2,column = 0,sticky='E')
+
+        Label(self.settings_calib, text = "Number of lhs simulations").grid(row=2,column = 0,sticky='E')
+        self.max_initial_iterations_calib = Entry(self.settings_calib,width = 5)
+        self.max_initial_iterations_calib.grid(row=2, column=1,sticky = W)
+        GUI_elements.create_ToolTip(self.max_initial_iterations_calib,"Specify the number of simulations that are done in the latin hypercube sample of the optimization.")
+        Label(self.settings_calib, text = "Max simplex simulations").grid(row=3,column = 0,sticky='E')
         self.max_optimization_iterations_calib= Entry(self.settings_calib,width = 5)
-        self.max_optimization_iterations_calib.grid(row=2, column=1,sticky = W)
+        self.max_optimization_iterations_calib.grid(row=3, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.max_optimization_iterations_calib,"Specify the maximum allowed number of simulations for the simplex optimization.")
         
-        Label(self.settings_calib, text = "Output time steps").grid(row=3,column = 0,sticky='E')
+        Label(self.settings_calib, text = "Output time steps").grid(row=4,column = 0,sticky='E')
         self.output_time_step = Entry(self.settings_calib,width = 5)
-        self.output_time_step.grid(row=3, column=1,sticky = W)
+        self.output_time_step.grid(row=4, column=1,sticky = W)
         GUI_elements.create_ToolTip(self.output_time_step,"Specify the time step length in the output file [seconds].")
         
         # Save calibrated model as:
@@ -578,7 +578,7 @@ class pyswmm_GUI:
         
         
         self.overwrite_button = Checkbutton(self.Calibration_tab, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
-        self.overwrite_button.deselect()    
+        self.overwrite_button.select()    
         self.overwrite_button.grid(row = 6, column = 0,sticky = W, columnspan = 3)
         GUI_elements.create_ToolTip(self.overwrite_button,"Check if the parameters specified in the GUI should be written to configuration file. Else the existing file is used.")
 
@@ -591,8 +591,14 @@ class pyswmm_GUI:
         # self.write_config.grid(row = 6, column = 0,sticky = W,pady = 5, padx = 5)
         # GUI_elements.create_ToolTip(self.write_config,"Save the configuration file without running.")
         
-        Button(self.Calibration_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 7, column = 2,sticky = W, padx = 5)
+        Button(self.Calibration_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 7, column = 2,sticky = E, padx = 5)
 
+
+        
+        self.Sensor_validation_button = Button(self.Calibration_tab, text ='Calc model-data fit',width = 15, command = lambda: GUI_elements.sensor_validation(self.param.model_name.get() + '.ini'))
+        self.Sensor_validation_button.grid(row = 7, column = 1,sticky = E,columnspan = 1)
+        GUI_elements.create_ToolTip(self.Sensor_validation_button,"Run one simulation to check model data.")
+        
 # =============================================================================
 # Content for the results tab
 

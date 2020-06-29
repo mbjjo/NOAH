@@ -18,6 +18,7 @@ import pyswmm_Simulation
 import noah_calibration_tools
 from noah_calibration_tools import swmm_simulate, interpolate_swmm_times_to_obs_times, change_model_property, simulate_objective, create_new_model, create_runobjective_delete_model, generate_run_lhs, run_simplex_routine
 from model_structure_analysis import swmm_model_inventory, backwards_network_trace
+from User_defined_objective_function import User_defined_objective_function
 
 # Required external imports 
 import pandas as pd
@@ -339,10 +340,10 @@ def Calibrate(config_file):
         objective_func = NSE_neg_objective
     elif inp.Objective_function == 'MAE':
         objective_func = MAE_objective
-    elif inp.Objective_function == 'Abs peak':
+    elif inp.Objective_function == 'ARPE':
         objective_func = abs_rel_peak_objective
-    elif inp.Objective_function == 'Corr peak':
-        objective_func = cor_peak_objective
+    elif inp.Objective_function == 'User defined function':
+        objective_func = User_defined_objective_function
     
     # Load observations
     data_file_path = inp.Observateions_dir + '/' + inp.Observations + '.csv'
@@ -423,26 +424,20 @@ def Calibrate(config_file):
                    evaluated_simplex_parameter_sets,evaluated_simplex_function_values,
                    best_simplex_parameter_set,best_simplex_objective_value)
 
-    # return ???
-    
-    
-    
-    
-    
-    # simulationStartTime = "2018-08-11 06:00" # defined as "%Y-%m-%d %H:%M"
-    # simulationEndTime = "2018-08-12 06:00" # defined as "%Y-%m-%d %H:%M"
-    # selected_nodes = ['G72K020'] # provide node names in a list  
-    # selected_links = [] # provide link names in a list
-    # selected_subcatchments = [] # provide subcatchment names in a list
-    # output_time_step = 60 # number of seconds you want your output to be in
-    # add_and_remove_hotstart_period = True # True: Add a hotstart period before the specified start time, False: Just start from the start time
-    # hotstart_period_h = 5 # number of hours to use for the hotstart
-    
-    # # If the observed location has an offset add it here
-    # K020_offset = round(18.39 - 18.31,3) # offset value - invert level of node in the observation location
-    # observations_loaded['value_no_errors'] = observations_loaded['value_no_errors'] + K020_offset
 
-
+    # Save calibrated file 
+    if inp.Optimization_method == 'lhs':
+        multiplying_values = best_lhs_parameter_set
+    else: 
+        multiplying_values = best_simplex_parameter_set
+        
+    new_file_path = inp.model_dir + '/' + inp.Save_file_as + '.inp'
+    create_new_model(multiplying_values, 
+                      model_inp, new_file_path,
+                      parameter_sections, parameter_names, num_model_parameters,
+                      
+                      subs_to_modify, links_to_modify, nodes_to_modify)
+    
 # A simple RMSE objective function
 def RMSE_objective(obs, mod):
     error = mod - obs
@@ -476,24 +471,59 @@ def cor_peak_objective(obs, mod):
     mixed_objective = abs_rel_peak_error - correlation_coef
     return(mixed_objective)
 
-# =============================================================================
 
-def Optimize_Real_time_control():
-    # These two lines are required in order to read the configuration file
-    # All variables are stored as inp._VarName_ and can be used in functions. 
-    config_file = self.param.model_name.get() + '.ini'
+def sensor_validation(config_file):
+    # Loading parameters
     inp = Read_Config_Parameters(config_file)
     
     model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
+    selected_nodes = [inp.Calibration_sensor]
+    selected_links = list()
+    selected_subcatchments = list()
     
-    Two_step_optimizer()
     
-    write_SWMM_controls()
+     
+    # Load observations
+    data_file_path = inp.Observateions_dir + '/' + inp.Observations + '.csv'
+    observations_loaded = pd.read_csv(data_file_path, sep=',')
+    observations_loaded['time'] = pd.to_datetime(observations_loaded['time'])
+    # Running simulation with objective function
+    single_sim_calib_RMSE = simulate_objective(model_inp, 
+                       inp.simulationStartTime, inp.simulationEndTime, 
+                       selected_nodes, selected_links, selected_subcatchments, 
+                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
+                       observations_loaded,
+                       RMSE_objective)
     
-    # return 
+    single_sim_calib_NSE = simulate_objective(model_inp, 
+                       inp.simulationStartTime, inp.simulationEndTime, 
+                       selected_nodes, selected_links, selected_subcatchments, 
+                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
+                       observations_loaded,
+                       NSE_neg_objective)
+    single_sim_calib_MAE = simulate_objective(model_inp, 
+                       inp.simulationStartTime, inp.simulationEndTime, 
+                       selected_nodes, selected_links, selected_subcatchments, 
+                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
+                       observations_loaded,
+                       MAE_objective)
+    single_sim_calib_AbsPeak = simulate_objective(model_inp, 
+                       inp.simulationStartTime, inp.simulationEndTime, 
+                       selected_nodes, selected_links, selected_subcatchments, 
+                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
+                       observations_loaded,
+                       abs_rel_peak_objective)
     
-
     
+    print('''\nCalculated model-data fit
+objective values are:
+RMSE: {:.2f}
+NSE: {:.2f}
+MAE: {:.2f}
+Abs Peak: {:.2f}
+'''.format(single_sim_calib_RMSE,single_sim_calib_NSE,single_sim_calib_MAE,single_sim_calib_AbsPeak))
+        
+        
 # =============================================================================
 # Tooltip
 class ToolTip(object):
@@ -867,8 +897,8 @@ def calibrate_results(timestamp):
     
     
     
-if __name__ == "__main__": 
-    calibrate_results('2020-06-16_13-02-45')
+# if __name__ == "__main__": 
+#     calibrate_results('2020-06-16_13-02-45')
 # To be deleted: 
 # =============================================================================
 # 

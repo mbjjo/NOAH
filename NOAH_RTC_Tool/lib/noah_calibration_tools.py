@@ -432,7 +432,7 @@ def run_simplex_routine(start_param_values,
     if max_iterations == None:
         sim_options = {'disp': True}   #{'maxiter': 10, 'disp': True},
     else:
-        sim_options = {'maxiter': max_iterations, 'disp': True}
+        sim_options = {'maxfev': max_iterations, 'disp': True}
     
     # Run the simplex algorithm
     res = minimize(simplex_objective, start_param_values, args = args_for_scipy, method='nelder-mead', callback = simplex_callback,

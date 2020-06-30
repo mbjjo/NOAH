@@ -34,6 +34,7 @@ from configparser import ConfigParser
 import os 
 from threading import Thread
 import swmmio
+import shutil
 # import the necessary modelus from pyswmm
 import pyswmm
 from pyswmm import Simulation, Nodes, Links, SystemStats, Subcatchments
@@ -313,7 +314,56 @@ def Calibrate(config_file):
     # All variables are stored as inp._VarName_ and can be used in functions. 
     inp = Read_Config_Parameters(config_file)
     
-    model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
+    # #Changing the path of the Time series to run models.
+    # from swmmio.utils import modify_model
+    # from swmmio.utils.modify_model import replace_inp_section
+    # from swmmio.utils.dataframes import create_dataframeINP
+    # # Extracting a section (Timeseries) to a pandas DataFrame 
+        
+    # path = inp.model_dir
+    # inp_file = inp.model_name
+    # baseline = path + '/' + inp_file + '.inp'
+    # sections = ['[TIMESERIES]']    
+    # for section in sections:
+    #     try:
+    #         # Create a dataframe of the model's time series 
+    #         Timeseries = create_dataframeINP(baseline, section)
+    #         New_Timeseries = Timeseries.copy()
+    #         # Modify the path containing the timeseries 
+    #         for i in range(len(Timeseries)):
+    #             string = Timeseries.iloc[i][0]
+                
+    #             if '"' in string:   # Check if string is an external file if not nothing is changed. 
+    #                                 # This might be slow of the timeseries are long
+    #                 Rainfile_old = string.split('"')[-2]
+    #                 if '\\' in Rainfile_old: # If the rain file is in an absolute path this is changed (Also if is in another directory than the model)
+    #                     Rainfile_old = Rainfile_old.split('/')[-1]
+    #                 Rain_name = string.split('"')[-3]
+    #                 Rainfile_new = path + '/' + Rainfile_old
+    #                 New_Timeseries.iloc[i][0] = Rain_name + '"' + Rainfile_new + '"'
+    #                 print('Rainfile_new: '+ Rainfile_new)
+    #                 print('Rainfile_old: '+ Rainfile_old)
+    #                 print('Rain_name:' + Rain_name)
+    #             else: 
+    #                 New_Timeseries.iloc[i][0] = np.nan
+    #         New_Timeseries.dropna(inplace = True)
+                
+    #         # Create a temporary file with the adjusted path
+    #         new_file = inp_file + '_tmp.inp'
+    #         shutil.copyfile(baseline, path + '/' + new_file)
+         
+    #         # print('path:' + path ) 
+    #         #Overwrite the TIMESERIES section of the new model with the adjusted data
+    #         with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
+    #             replace_inp_section(path + '/' + new_file, section, New_Timeseries)
+    #     except KeyError:
+    #         pass
+            
+        
+        
+        
+        
+    model_inp = inp.model_dir + '/' + inp.model_name + '_tmp.inp'
     
     # get parameters to be calibrated: 
     model_param = [inp.calibrate_perc_imp,inp.calibrate_width,inp.Calibrate_initial_loss,inp.Calibrate_roughness_pipe]
@@ -460,16 +510,19 @@ def MAE_objective(obs, mod):
 # Absolute Relative Peak Error
 def abs_rel_peak_objective(obs, mod):
     abs_rel_peak_error = abs((max(mod) - max(obs))/max(obs))
-    correlation_coef = np.corrcoef(mod,obs)[0][1]
-    mixed_objective = abs_rel_peak_error - correlation_coef
-    return(mixed_objective)
+    return(abs_rel_peak_error)
 
-# A two-objective function: absolute relative peak error + linear correlation
-def cor_peak_objective(obs, mod):
-    abs_rel_peak_error = abs((max(mod) - max(obs))/max(obs))
-    correlation_coef = np.corrcoef(mod,obs)[0][1]
-    mixed_objective = abs_rel_peak_error - correlation_coef
-    return(mixed_objective)
+
+
+
+
+def sensor_validation_with_config(self):
+    if self.param.Overwrite_config.get() == True:
+        write_config(self) # Writes configuration file 
+    
+    config_file = self.param.model_name.get() + '.ini'
+    sensor_validation(config_file)
+
 
 
 def sensor_validation(config_file):
@@ -481,47 +534,36 @@ def sensor_validation(config_file):
     selected_links = list()
     selected_subcatchments = list()
     
-    
+    # select objective function from input
+    if inp.Objective_function == 'RMSE':
+        objective_func = RMSE_objective
+    elif inp.Objective_function == 'NSE':
+        objective_func = NSE_neg_objective
+    elif inp.Objective_function == 'MAE':
+        objective_func = MAE_objective
+    elif inp.Objective_function == 'ARPE':
+        objective_func = abs_rel_peak_objective
+    elif inp.Objective_function == 'User defined function':
+        objective_func = User_defined_objective_function
      
     # Load observations
     data_file_path = inp.Observateions_dir + '/' + inp.Observations + '.csv'
     observations_loaded = pd.read_csv(data_file_path, sep=',')
     observations_loaded['time'] = pd.to_datetime(observations_loaded['time'])
     # Running simulation with objective function
-    single_sim_calib_RMSE = simulate_objective(model_inp, 
+    single_sim_calib = simulate_objective(model_inp, 
                        inp.simulationStartTime, inp.simulationEndTime, 
                        selected_nodes, selected_links, selected_subcatchments, 
                        inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
                        observations_loaded,
-                       RMSE_objective)
+                       objective_func)
     
-    single_sim_calib_NSE = simulate_objective(model_inp, 
-                       inp.simulationStartTime, inp.simulationEndTime, 
-                       selected_nodes, selected_links, selected_subcatchments, 
-                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
-                       observations_loaded,
-                       NSE_neg_objective)
-    single_sim_calib_MAE = simulate_objective(model_inp, 
-                       inp.simulationStartTime, inp.simulationEndTime, 
-                       selected_nodes, selected_links, selected_subcatchments, 
-                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
-                       observations_loaded,
-                       MAE_objective)
-    single_sim_calib_AbsPeak = simulate_objective(model_inp, 
-                       inp.simulationStartTime, inp.simulationEndTime, 
-                       selected_nodes, selected_links, selected_subcatchments, 
-                       inp.Output_time_step, inp.Use_hotstart, inp.hotstart_period_h,
-                       observations_loaded,
-                       abs_rel_peak_objective)
     
     
     print('''\nCalculated model-data fit
-objective values are:
-RMSE: {:.2f}
-NSE: {:.2f}
-MAE: {:.2f}
-Abs Peak: {:.2f}
-'''.format(single_sim_calib_RMSE,single_sim_calib_NSE,single_sim_calib_MAE,single_sim_calib_AbsPeak))
+objective value is:
+{:.2f} with the objective function: {}
+'''.format(single_sim_calib,inp.Objective_function))
         
         
 # =============================================================================

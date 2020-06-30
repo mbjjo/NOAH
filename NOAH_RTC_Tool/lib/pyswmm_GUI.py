@@ -38,7 +38,7 @@ import sys
 from datetime import datetime,timedelta
 import configparser
 import threading
-
+import shutil 
 # import the necessary modelus from pyswmm
 import pyswmm
 from pyswmm import Simulation, Nodes, Links, SystemStats, Subcatchments
@@ -279,7 +279,7 @@ class pyswmm_GUI:
 
 # Creatng the content for the rain tab 
         
-        Label(self.Rain_tab, text = "Contains a tool for designing rain events that can be imported to the SWMM model", bg = 'white').grid(row=0,column = 0, columnspan = 3, pady  =8)
+        Label(self.Rain_tab, text = "Will contain a tool for designing rain events that can be imported to the SWMM model", bg = 'white').grid(row=0,column = 0, columnspan = 3, pady  =8, sticky = NSEW)
                 
         self.hotstart_button = Button(self.Rain_tab, text ='Choose hotstart file',width = 15, command = lambda:msg.showerror('','Hotstart is not implemented for RTC yet.'))
         self.hotstart_button.grid(row = 2, column = 0,sticky = 'W')
@@ -331,9 +331,9 @@ class pyswmm_GUI:
         self.CSO_id2.grid(row = 4,column = 1)
         self.CSO_id3 = Entry(self.objective_frame,width = 15)
         self.CSO_id3.grid(row = 5,column = 1)
-        GUI_elements.create_ToolTip(self.CSO_id1,"Write the node ID of the CSO struture or flodded node")
-        GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture or flodded node")
-        GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture or flodded node")
+        GUI_elements.create_ToolTip(self.CSO_id1,"Write the node ID of the CSO struture or flooded node")
+        GUI_elements.create_ToolTip(self.CSO_id2,"Write the node ID of the CSO struture or flooded node")
+        GUI_elements.create_ToolTip(self.CSO_id3,"Write the node ID of the CSO struture or flooded node")
         
         Label(self.objective_frame,text = "OR provide list:").grid(row=6,column = 0, columnspan = 1)
         self.Custom_CSO_ids= Entry(self.objective_frame,width = 30)
@@ -358,7 +358,7 @@ class pyswmm_GUI:
         self.CSO_event_duration['state'] = 'disabled'
         GUI_elements.create_ToolTip(self.CSO_event_duration,"Define the time (hours) before an event is counted as more events.")
         Label(self.CSO_settings_frame, text = "Define event as").grid(row=2,column = 0,sticky=E)
-        self.CSO_type = ttk.Combobox(self.CSO_settings_frame,width = 35,values = ('Outflow from CSO structure','Flodding above ground from node'),state = 'readonly')
+        self.CSO_type = ttk.Combobox(self.CSO_settings_frame,width = 35,values = ('Outflow from CSO structure','Flooding above ground from node'),state = 'readonly')
         self.CSO_type.current(1)
         self.CSO_type.grid(row=2, column=1,columnspan = 2, sticky = E)      
 
@@ -492,7 +492,7 @@ class pyswmm_GUI:
         Label(self.calib_obs_frame, text = "Sensor location").grid(row= 3,column =0,columnspan = 1,sticky = E)
         self.sensor_calib = Entry(self.calib_obs_frame,width = 10)
         self.sensor_calib.grid(row=3, column=1,sticky = W)
-        GUI_elements.create_ToolTip(self.sensor_calib,"Specify the ID of the sensor.")
+        GUI_elements.create_ToolTip(self.sensor_calib,"Specify the SWMM model ID of the sensor.")
 
           
         # Clibration period frame
@@ -595,7 +595,7 @@ class pyswmm_GUI:
 
 
         
-        self.Sensor_validation_button = Button(self.Calibration_tab, text ='Calc model-data fit',width = 15, command = lambda: GUI_elements.sensor_validation(self.param.model_name.get() + '.ini'))
+        self.Sensor_validation_button = Button(self.Calibration_tab, text ='Calc model-data fit',width = 15, command = lambda: GUI_elements.sensor_validation_with_config(self))
         self.Sensor_validation_button.grid(row = 7, column = 1,sticky = E,columnspan = 1)
         GUI_elements.create_ToolTip(self.Sensor_validation_button,"Run one simulation to check model data.")
         

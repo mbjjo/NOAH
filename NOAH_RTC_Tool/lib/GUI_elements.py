@@ -314,57 +314,55 @@ def Calibrate(config_file):
     # All variables are stored as inp._VarName_ and can be used in functions. 
     inp = Read_Config_Parameters(config_file)
     
-    # #Changing the path of the Time series to run models.
-    # from swmmio.utils import modify_model
-    # from swmmio.utils.modify_model import replace_inp_section
-    # from swmmio.utils.dataframes import create_dataframeINP
-    # # Extracting a section (Timeseries) to a pandas DataFrame 
-        
-    # path = inp.model_dir
-    # inp_file = inp.model_name
-    # baseline = path + '/' + inp_file + '.inp'
-    # sections = ['[TIMESERIES]']    
-    # for section in sections:
-    #     try:
-    #         # Create a dataframe of the model's time series 
-    #         Timeseries = create_dataframeINP(baseline, section)
-    #         New_Timeseries = Timeseries.copy()
-    #         # Modify the path containing the timeseries 
-    #         for i in range(len(Timeseries)):
-    #             string = Timeseries.iloc[i][0]
-                
-    #             if '"' in string:   # Check if string is an external file if not nothing is changed. 
-    #                                 # This might be slow of the timeseries are long
-    #                 Rainfile_old = string.split('"')[-2]
-    #                 if '\\' in Rainfile_old: # If the rain file is in an absolute path this is changed (Also if is in another directory than the model)
-    #                     Rainfile_old = Rainfile_old.split('/')[-1]
-    #                 Rain_name = string.split('"')[-3]
-    #                 Rainfile_new = path + '/' + Rainfile_old
-    #                 New_Timeseries.iloc[i][0] = Rain_name + '"' + Rainfile_new + '"'
-    #                 print('Rainfile_new: '+ Rainfile_new)
-    #                 print('Rainfile_old: '+ Rainfile_old)
-    #                 print('Rain_name:' + Rain_name)
-    #             else: 
-    #                 New_Timeseries.iloc[i][0] = np.nan
-    #         New_Timeseries.dropna(inplace = True)
-                
-    #         # Create a temporary file with the adjusted path
-    #         new_file = inp_file + '_tmp.inp'
-    #         shutil.copyfile(baseline, path + '/' + new_file)
-         
-    #         # print('path:' + path ) 
-    #         #Overwrite the TIMESERIES section of the new model with the adjusted data
-    #         with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
-    #             replace_inp_section(path + '/' + new_file, section, New_Timeseries)
-    #     except KeyError:
-    #         pass
+    try:
+        #Changing the path of the Time series to run models.
+        from swmmio.utils import modify_model
+        from swmmio.utils.modify_model import replace_inp_section
+        from swmmio.utils.dataframes import create_dataframeINP
+        # Extracting a section (Timeseries) to a pandas DataFrame 
             
-        
-        
-        
-        
-    model_inp = inp.model_dir + '/' + inp.model_name + '_tmp.inp'
+        path = inp.model_dir
+        inp_file = inp.model_name
+        baseline = path + '/' + inp_file + '.inp'
     
+      
+        # Create a dataframe of the model's time series 
+        Timeseries = create_dataframeINP(baseline, '[TIMESERIES]')
+        New_Timeseries = Timeseries.copy()
+        # Modify the path containing the timeseries 
+        for i in range(len(Timeseries)):
+            string = Timeseries.iloc[i][0]
+            
+            if '"' in string:   # Check if string is an external file if not nothing is changed. 
+                                # This might be slow of the timeseries are long
+                Rainfile_old = string.split('"')[-2]
+                if '\\' in Rainfile_old: # If the rain file is in an absolute path this is changed (Also if is in another directory than the model)
+                    Rainfile_old = Rainfile_old.split('/')[-1]
+                Rain_name = string.split('"')[-3]
+                Rainfile_new = path + '/' + Rainfile_old
+                New_Timeseries.iloc[i][0] = Rain_name + '"' + Rainfile_new + '"'
+                print('Rainfile_new: '+ Rainfile_new)
+                print('Rainfile_old: '+ Rainfile_old)
+                print('Rain_name:' + Rain_name)
+            else: 
+                New_Timeseries.iloc[i][0] = np.nan
+        New_Timeseries.dropna(inplace = True)
+            
+        # Create a temporary file with the adjusted path
+        new_file = inp_file + '_tmp.inp'
+        shutil.copyfile(baseline, path + '/' + new_file)
+     
+        # print('path:' + path ) 
+        #Overwrite the TIMESERIES section of the new model with the adjusted data
+        with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
+            replace_inp_section(path + '/' + new_file, '[TIMESERIES]', New_Timeseries)
+        
+        model_inp = inp.model_dir + '/' + inp.model_name + '_tmp.inp'
+    except KeyError:
+        model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
+        
+        
+    print(model_inp)
     # get parameters to be calibrated: 
     model_param = [inp.calibrate_perc_imp,inp.calibrate_width,inp.Calibrate_initial_loss,inp.Calibrate_roughness_pipe]
     all_parameter_ranges = [[inp.percent_imp_min,inp.percent_imp_max],
@@ -467,8 +465,12 @@ def Calibrate(config_file):
         evaluated_simplex_function_values = []
         best_simplex_parameter_set = []
         best_simplex_objective_value = []
-
-    create_calibrate_plot(inp.Optimization_method,num_model_parameters,parameter_names,timestamp,
+        
+        
+    all_parameter_names_plot = ['%Imprv', 'Width', 'Initial loss', 'Roughness (pipes)'] # the name of each parameter as defined in the .inp file
+    parameter_names_plot = [x for i,x in enumerate(all_parameter_names_plot) if model_param[i]]
+  
+    create_calibrate_plot(inp.Optimization_method,num_model_parameters,parameter_names_plot,timestamp,
                    lhs_evaluated_parameters,lhs_objective_values,
                    best_lhs_parameter_set,best_lhs_objective_value,
                    evaluated_simplex_parameter_sets,evaluated_simplex_function_values,
@@ -841,27 +843,47 @@ def create_calibrate_plot(calibrate_method,num_model_parameters,parameter_names,
     # These are saved as .png files in the output folder. 
     
     if calibrate_method == 'lhs':
-        # Plot LHS results
-        fig_lhs, ax = plt.subplots(1,num_model_parameters)
-        for i in range(num_model_parameters):
-            ax[i].plot(lhs_evaluated_parameters[:,i], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
-            ax[i].plot(best_lhs_parameter_set[i], best_lhs_objective_value, 'r.',label = 'best lhs simulation')
-            ax[i].set_title(parameter_names[i])
-            ax[i].set_xlabel("Parameter Value")
-        ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        if num_model_parameters > 1:
+            # Plot LHS results
+            fig_lhs, ax = plt.subplots(1,num_model_parameters)
+            for i in range(num_model_parameters):
+                ax[i].plot(lhs_evaluated_parameters[:,i], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
+                ax[i].plot(best_lhs_parameter_set[i], best_lhs_objective_value, 'r.',label = 'best lhs simulation')
+                ax[i].set_title(parameter_names[i])
+                ax[i].set_xlabel("Parameter Value")
+            ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        else:
+            plt.figure()
+            plt.plot(lhs_evaluated_parameters[:], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
+            plt.plot(best_lhs_parameter_set, best_lhs_objective_value,'r.',label = 'best lhs simulation')
+            plt.title(parameter_names[0])
+            plt.xlabel("Parameter Value")
+            plt.legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        
         plt.savefig('../output/' + timestamp +'/lhs_figure.png',bbox_inches='tight')
   
     elif calibrate_method == 'Combined':
-        fig_both, ax = plt.subplots(1,num_model_parameters)
-        for i in range(num_model_parameters):
-            ax[i].plot(lhs_evaluated_parameters[:,i], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
-            ax[i].plot(evaluated_simplex_parameter_sets[:,i], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
-            ax[i].plot(best_lhs_parameter_set[i], best_lhs_objective_value,'r.',label = 'best lhs simulation')
-            ax[i].plot(best_simplex_parameter_set[i], best_simplex_objective_value,'y.',label = 'best simplex simulation')
-            ax[i].set_title(parameter_names[i])
-            ax[i].set_xlabel("Parameter Value")
-            
-        ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        if num_model_parameters > 1:
+            fig_both, ax = plt.subplots(1,num_model_parameters)
+            for i in range(num_model_parameters):
+                ax[i].plot(lhs_evaluated_parameters[:,i], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
+                ax[i].plot(evaluated_simplex_parameter_sets[:,i], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
+                ax[i].plot(best_lhs_parameter_set[i], best_lhs_objective_value,'r.',label = 'best lhs simulation')
+                ax[i].plot(best_simplex_parameter_set[i], best_simplex_objective_value,'y.',label = 'best simplex simulation')
+                ax[i].set_title(parameter_names[i])
+                ax[i].set_xlabel("Parameter Value")
+                
+            ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        else: 
+            plt.figure()
+            plt.plot(lhs_evaluated_parameters[:], lhs_objective_values, 'g.',label = 'evaluated lhs simulations')
+            plt.plot(evaluated_simplex_parameter_sets[:], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
+            plt.plot(best_lhs_parameter_set, best_lhs_objective_value,'r.',label = 'best lhs simulation')
+            plt.plot(best_simplex_parameter_set, best_simplex_objective_value,'y.',label = 'best simplex simulation')
+            plt.title(parameter_names[0])
+            plt.xlabel("Parameter Value")
+            plt.legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        
         plt.savefig('../output/' + timestamp +'/lhs_and_simplex_figure.png',bbox_inches='tight')
     
         # plot of simplex objective function values over time (to check convergence)
@@ -872,21 +894,32 @@ def create_calibrate_plot(calibrate_method,num_model_parameters,parameter_names,
         plt.savefig('../output/' + timestamp +'/simplex_convergence.png',bbox_inches='tight')
     
     elif calibrate_method == 'Simplex':
-        fig_simplex, ax = plt.subplots(1,num_model_parameters)
-        for i in range(num_model_parameters):
-            ax[i].plot(evaluated_simplex_parameter_sets[:,i], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
-            ax[i].plot(best_simplex_parameter_set[i], best_simplex_objective_value,'y.',label = 'best simplex simulation')
-            ax[i].set_title(parameter_names[i])
-            ax[i].set_xlabel("Parameter Value")
-            fig_simplex.legend()
-        ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        if num_model_parameters > 1:
+            fig_simplex, ax = plt.subplots(1,num_model_parameters)
+            for i in range(num_model_parameters):
+                ax[i].plot(evaluated_simplex_parameter_sets[:,i], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
+                ax[i].plot(best_simplex_parameter_set[i], best_simplex_objective_value,'y.',label = 'best simplex simulation')
+                ax[i].set_title(parameter_names[i])
+                ax[i].set_xlabel("Parameter Value")
+                fig_simplex.legend()
+            ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+            
+        else: 
+            plt.figure()
+            plt.plot(evaluated_simplex_parameter_sets[:], evaluated_simplex_function_values,'.',label = 'evaluated simplex simulations')
+            plt.plot(best_simplex_parameter_set, best_simplex_objective_value,'y.',label = 'best simplex simulation')
+            plt.title(parameter_names[0])
+            plt.xlabel("Parameter Value")
+            plt.legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
+        
         plt.savefig('../output/' + timestamp +'/simplex_figure.png',bbox_inches='tight')
-    
         # plot of simplex objective function values over time (to check convergence)
         fig_simplex_iterations, ax = plt.subplots(1,1)
         ax.plot(evaluated_simplex_function_values,'.')
         ax.set_title('Check model convergence')
         ax.set_xlabel("Model iterations")
+       
+        
         plt.savefig('../output/' + timestamp +'/simplex_convergence.png',bbox_inches='tight')
    
 def calibrate_results(timestamp):

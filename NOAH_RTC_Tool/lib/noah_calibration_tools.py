@@ -222,7 +222,6 @@ def simulate_objective(inp_file, simulationStartTime, simulationEndTime,
     
     # locate observations for simulation period
     obs_start_idx = np.where(observations_df['time'] == pd.to_datetime(simulationStartTime))
-    obs_start_idx = int(obs_start_idx[0])
     obs_end_idx = np.where(observations_df['time'] == pd.to_datetime(simulationEndTime))
     obs_end_idx = int(obs_end_idx[0]) - 1
     

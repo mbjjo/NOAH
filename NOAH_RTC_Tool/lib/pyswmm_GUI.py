@@ -125,7 +125,7 @@ class pyswmm_GUI:
         self.overwrite_button_sim = Checkbutton(self.Simulation_tab, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
         self.overwrite_button_sim.select()    
         self.overwrite_button_sim.grid(row = 5, column = 0,sticky = W, columnspan = 3)
-        GUI_elements.create_ToolTip(self.overwrite_button_sim,"Check if the parameters specified in the GUI should be written to configuration file. Else the existing file is used.")
+        GUI_elements.create_ToolTip(self.overwrite_button_sim,"Wen ON, the parameters specified in the GUI is written to configuration file and used for simulation. \nWhen OFF, the existing configuration file is used and inputs to the GUI are ignored.")
 
         # self.SWMM_results = Button(self.window, text ='Write to SWMM file', width = 15, command = lambda: GUI_elements.generate_SWMM_file(self))
         # self.SWMM_results.grid(row = 5, column = 2,sticky = W,pady = 5, padx = 5)
@@ -580,7 +580,7 @@ class pyswmm_GUI:
         self.overwrite_button = Checkbutton(self.Calibration_tab, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
         self.overwrite_button.select()    
         self.overwrite_button.grid(row = 6, column = 0,sticky = W, columnspan = 3)
-        GUI_elements.create_ToolTip(self.overwrite_button,"Check if the parameters specified in the GUI should be written to configuration file. Else the existing file is used.")
+        GUI_elements.create_ToolTip(self.overwrite_button,"Wen ON, the parameters specified in the GUI is written to configuration file and used for simulation. \nWhen OFF, the existing configuration file is used and inputs to the GUI are ignored.")
 
         
         # Calibration button

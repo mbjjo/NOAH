@@ -40,8 +40,13 @@ class Optimizer:
         os.mkdir('../output/'+self.timestamp)   
         model_outfile = '../output/' + str(self.timestamp) + '/' + str(self.model_name) + '.out'
         
-        self.Redefine_Timeseries()
         
+        try:
+            self.Redefine_Timeseries()
+            self.Timeseries = True
+        except KeyError:
+            self.Timeseries = False
+            
         if self.useoptimization == False:
             result = self.simulation([self.sensor1_critical_depth]) # single simulation
             print('Simulation ran without optimization')
@@ -179,8 +184,13 @@ class Optimizer:
             New_controls_section['[CONTROLS]'][2] = 'THEN PUMP {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_True))
             New_controls_section['[CONTROLS]'][3] = 'ELSE PUMP {} SETTING = {}'.format(self.actuator1_id ,int(self.actuator1_target_setting_False))
         # Create a temporary file with the adjusted path
-        old_file = self.model_dir +'/'+ self.model_name + '_tmp' + '.inp'
-        new_file = self.model_dir +'/'+ self.model_name + '_tmp' + filename + '.inp'
+        
+        if self.Timeseries == True:
+            old_file = self.model_dir +'/'+ self.model_name + '_tmp' + '.inp'
+            new_file = self.model_dir +'/'+ self.model_name + '_tmp' + filename + '.inp'
+        elif self.Timeseries ==False:
+            old_file = self.model_dir +'/'+ self.model_name + '.inp'
+            new_file = self.model_dir +'/'+ self.model_name + filename + '.inp'
         shutil.copyfile(old_file,new_file)
     
         #Overwrite the CONTROLS section of the new model with the adjusted data
@@ -223,9 +233,9 @@ class Optimizer:
                 Rain_name = string.split('"')[-3]
                 Rainfile_new = path + '/' + Rainfile_old
                 New_Timeseries.iloc[i][0] = Rain_name + '"' + Rainfile_new + '"'
-                print('Rainfile_new: '+ Rainfile_new)
-                print('Rainfile_old: '+ Rainfile_old)
-                print('Rain_name:' + Rain_name)
+                # print('Rainfile_new: '+ Rainfile_new)
+                # print('Rainfile_old: '+ Rainfile_old)
+                # print('Rain_name:' + Rain_name)
             else: 
                 New_Timeseries.iloc[i][0] = np.nan
         New_Timeseries.dropna(inplace = True)
@@ -233,8 +243,8 @@ class Optimizer:
         # Create a temporary file with the adjusted path
         new_file = inp_file + '_tmp.inp'
         shutil.copyfile(baseline, path + '/' + new_file)
-        print('path:' + path ) 
-        print('new_file:' + new_file) 
+        # print('path:' + path ) 
+        # print('new_file:' + new_file) 
         # print('path:' + path ) 
         #Overwrite the TIMESERIES section of the new model with the adjusted data
         with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
@@ -306,10 +316,14 @@ class Optimizer:
         
         self.write_SWMM_controls(x[0],'_tmp')
             # Run simulation
-        with Simulation(self.model_dir +'/'+ self.model_name + '_tmp.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
-            for step in sim:
-                pass
-        
+        if self.Timeseries == True:
+            with Simulation(self.model_dir +'/'+ self.model_name + '_tmp_tmp.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
+                for step in sim:
+                    pass
+        elif self.Timeseries == False:
+            with Simulation(self.model_dir +'/'+ self.model_name + '_tmp.inp' , '../output/'+ self.timestamp + '/' + self.model_name + '.rpt', '../output/' + self.timestamp + '/' + self.model_name + '.out') as sim: 
+                for step in sim:
+                    pass
         
         # if self.actuator_type == 'orifice':
         #     # Run simulation
@@ -417,7 +431,7 @@ class Optimizer:
     def count_CSO_volume(self,CSO_ids, model_outfile): 
         if self.CSO_type == 'Outflow from CSO structure':
             CSO_type = 'Total_inflow'
-        elif self.CSO_type == 'Flodding above ground':
+        elif self.CSO_type == 'Flooding above ground from node':
             CSO_type = 'Flow_lost_flooding'
         df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],CSO_type]))for i in range(len(CSO_ids))),axis = 1)
         df = df*self.report_times_steps*60 
@@ -434,7 +448,7 @@ class Optimizer:
         
         if self.CSO_type == 'Outflow from CSO structure':
             CSO_type = 'Total_inflow'
-        elif self.CSO_type == 'Flodding above ground':
+        elif self.CSO_type == 'Flooding above ground from node':
             CSO_type = 'Flow_lost_flooding'
 
         df = pd.concat(((swmmtoolbox.extract(model_outfile,['node',CSO_ids[i],CSO_type]))for i in range(len(CSO_ids))),axis = 1)
@@ -480,7 +494,11 @@ class Optimizer:
     def write_optimal_result(self,result,runtime, config_file):
         # Calculate optimial results
         opt_setting = float(result['x'][0])
-
+        print(result)
+        opt_value = (result['fun'])
+        print(opt_value)
+        print(opt_setting)
+        # opt_value = 1
         model_outfile = '../output/' + self.timestamp + '/' + str(self.model_name) + '.out'
         if self.Custom_CSO_ids == '':
             if self.CSO_id2 == '': # Assume that CSO_id3 is also '' (empty) 
@@ -502,9 +520,8 @@ The model used is {}\n
 Total time of computation is {:.1f} minutes\n
 """.format(self.model_name,runtime))
             
-            file.write("""The best setting of the RTC setup is {:.2f}.
-This will result in a CSO volume from the specified CSO structures of {:.0f} m3 and {:.1f} CSO events \n\n
-""".format(opt_setting,opt_vol,opt_CSO_events))
+            file.write("""The best setting of the RTC setup is {:.2f}, which will result in an objective value of {.:2f}.""".format(opt_setting,opt_value))
+# This will result in a CSO volume from the specified CSO structures of {:.0f} m3 and {:.1f} CSO events \n\n
             
             file.write('Optimization output: \n' + str(result))
             

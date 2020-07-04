@@ -2,3 +2,5 @@
 *
 # Except this file
 !.gitignore
+!Calibration_test/*
+!RTC_test/*

@@ -40,10 +40,20 @@ class Optimizer:
         os.mkdir('../output/'+self.timestamp)   
         model_outfile = '../output/' + str(self.timestamp) + '/' + str(self.model_name) + '.out'
         
+              # The Hiddenprints are only used to avoid printing the warning from the exception since this is not relevant for the end user. 
+        class HiddenPrints:
+            def __enter__(self):
+                self._original_stdout = sys.stdout
+                sys.stdout = open(os.devnull, 'w')
         
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                sys.stdout.close()
+                sys.stdout = self._original_stdout
+        # copies the existing         
         try:
-            self.Redefine_Timeseries()
-            self.Timeseries = True
+            with HiddenPrints():
+                self.Redefine_Timeseries()
+                self.Timeseries = True
         except KeyError:
             self.Timeseries = False
             
@@ -520,7 +530,8 @@ The model used is {}\n
 Total time of computation is {:.1f} minutes\n
 """.format(self.model_name,runtime))
             
-            file.write("""The best setting of the RTC setup is {:.2f}, which will result in an objective value of {.:2f}.""".format(opt_setting,opt_value))
+            file.write("""The best setting of the RTC setup is {:.2f}.\n\n""".format(opt_setting))
+                       # , which will result in an objective value of {.:2f}.""".format(opt_setting,opt_value))
 # This will result in a CSO volume from the specified CSO structures of {:.0f} m3 and {:.1f} CSO events \n\n
             
             file.write('Optimization output: \n' + str(result))

@@ -219,7 +219,7 @@ def simulate_objective(inp_file, simulationStartTime, simulationEndTime,
                                             output_time_step, add_and_remove_hotstart_period, hotstart_period_h)
     
     simulated_variables = list(swmm_simulation_results.keys())[1] # get the name of the simulated variable (only works for one simulated variable, not multiple ones)
-    
+
     # locate observations for simulation period
     obs_start_idx = np.where(observations_df['time'] == pd.to_datetime(simulationStartTime))
     obs_end_idx = np.where(observations_df['time'] == pd.to_datetime(simulationEndTime))
@@ -228,8 +228,8 @@ def simulate_objective(inp_file, simulationStartTime, simulationEndTime,
     # align model and observation time steps
     swmm_results_interpolated = interpolate_swmm_times_to_obs_times(swmm_simulation_results['time'], 
                                                                     swmm_simulation_results[simulated_variables], 
-                                                                    observations_df.loc[obs_start_idx:obs_end_idx,'time'],
-                                                                    observations_df.loc[obs_start_idx:obs_end_idx,'value_no_errors'])
+                                                                    observations_df.loc[obs_start_idx[0][0]:obs_end_idx,'time'],
+                                                                    observations_df.loc[obs_start_idx[0][0]:obs_end_idx,'value_no_errors'])
     
     # obs = observations_df.loc[obs_start_idx:obs_end_idx,'value_no_errors'].reset_index(drop=True)
     # mod = swmm_results_interpolated['values'].reset_index(drop=True)

@@ -313,56 +313,63 @@ def Calibrate_with_config(self):
 def Calibrate(config_file):
     # All variables are stored as inp._VarName_ and can be used in functions. 
     inp = Read_Config_Parameters(config_file)
+    # The Hiddenprints are only used to avoid printing the warning from the exception since this is not relevant for the end user. 
+    class HiddenPrints:
+        def __enter__(self):
+            self._original_stdout = sys.stdout
+            sys.stdout = open(os.devnull, 'w')
     
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            sys.stdout.close()
+            sys.stdout = self._original_stdout
     try:
-        #Changing the path of the Time series to run models.
-        from swmmio.utils import modify_model
-        from swmmio.utils.modify_model import replace_inp_section
-        from swmmio.utils.dataframes import create_dataframeINP
-        # Extracting a section (Timeseries) to a pandas DataFrame 
-            
-        path = inp.model_dir
-        inp_file = inp.model_name
-        baseline = path + '/' + inp_file + '.inp'
-    
-      
-        # Create a dataframe of the model's time series 
-        Timeseries = create_dataframeINP(baseline, '[TIMESERIES]')
-        New_Timeseries = Timeseries.copy()
-        # Modify the path containing the timeseries 
-        for i in range(len(Timeseries)):
-            string = Timeseries.iloc[i][0]
-            
-            if '"' in string:   # Check if string is an external file if not nothing is changed. 
-                                # This might be slow of the timeseries are long
-                Rainfile_old = string.split('"')[-2]
-                if '\\' in Rainfile_old: # If the rain file is in an absolute path this is changed (Also if is in another directory than the model)
-                    Rainfile_old = Rainfile_old.split('/')[-1]
-                Rain_name = string.split('"')[-3]
-                Rainfile_new = path + '/' + Rainfile_old
-                New_Timeseries.iloc[i][0] = Rain_name + '"' + Rainfile_new + '"'
-                print('Rainfile_new: '+ Rainfile_new)
-                print('Rainfile_old: '+ Rainfile_old)
-                print('Rain_name:' + Rain_name)
-            else: 
-                New_Timeseries.iloc[i][0] = np.nan
-        New_Timeseries.dropna(inplace = True)
-            
-        # Create a temporary file with the adjusted path
-        new_file = inp_file + '_tmp.inp'
-        shutil.copyfile(baseline, path + '/' + new_file)
-     
-        # print('path:' + path ) 
-        #Overwrite the TIMESERIES section of the new model with the adjusted data
-        with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
-            replace_inp_section(path + '/' + new_file, '[TIMESERIES]', New_Timeseries)
+        with HiddenPrints():
+            #Changing the path of the Time series to run models.
+            from swmmio.utils import modify_model
+            from swmmio.utils.modify_model import replace_inp_section
+            from swmmio.utils.dataframes import create_dataframeINP
+            # Extracting a section (Timeseries) to a pandas DataFrame 
+                
+            path = inp.model_dir
+            inp_file = inp.model_name
+            baseline = path + '/' + inp_file + '.inp'
         
-        model_inp = inp.model_dir + '/' + inp.model_name + '_tmp.inp'
+          
+            # Create a dataframe of the model's time series 
+            Timeseries = create_dataframeINP(baseline, '[TIMESERIES]')
+            New_Timeseries = Timeseries.copy()
+            # Modify the path containing the timeseries 
+            for i in range(len(Timeseries)):
+                string = Timeseries.iloc[i][0]
+                
+                if '"' in string:   # Check if string is an external file if not nothing is changed. 
+                                    # This might be slow of the timeseries are long
+                    Rainfile_old = string.split('"')[-2]
+                    if '\\' in Rainfile_old: # If the rain file is in an absolute path this is changed (Also if is in another directory than the model)
+                        Rainfile_old = Rainfile_old.split('/')[-1]
+                    Rain_name = string.split('"')[-3]
+                    Rainfile_new = path + '/' + Rainfile_old
+                    New_Timeseries.iloc[i][0] = Rain_name + '"' + Rainfile_new + '"'
+                    print('Rainfile_new: '+ Rainfile_new)
+                    print('Rainfile_old: '+ Rainfile_old)
+                    print('Rain_name:' + Rain_name)
+                else: 
+                    New_Timeseries.iloc[i][0] = np.nan
+            New_Timeseries.dropna(inplace = True)
+                
+            # Create a temporary file with the adjusted path
+            new_file = inp_file + '_tmp.inp'
+            shutil.copyfile(baseline, path + '/' + new_file)
+         
+            # print('path:' + path ) 
+            #Overwrite the TIMESERIES section of the new model with the adjusted data
+            with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
+                replace_inp_section(path + '/' + new_file, '[TIMESERIES]', New_Timeseries)
+            
+            model_inp = inp.model_dir + '/' + inp.model_name + '_tmp.inp'
     except KeyError:
         model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
         
-        
-    print(model_inp)
     # get parameters to be calibrated: 
     model_param = [inp.calibrate_perc_imp,inp.calibrate_width,inp.Calibrate_initial_loss,inp.Calibrate_roughness_pipe]
     all_parameter_ranges = [[inp.percent_imp_min,inp.percent_imp_max],
@@ -901,7 +908,7 @@ def create_calibrate_plot(calibrate_method,num_model_parameters,parameter_names,
                 ax[i].plot(best_simplex_parameter_set[i], best_simplex_objective_value,'y.',label = 'best simplex simulation')
                 ax[i].set_title(parameter_names[i])
                 ax[i].set_xlabel("Parameter Value")
-                fig_simplex.legend()
+                # fig_simplex.legend()
             ax[0].legend(bbox_to_anchor=(num_model_parameters/2.,1.05),ncol = 2,loc = 'lower center')
             
         else: 

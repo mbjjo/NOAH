@@ -27,6 +27,7 @@ import os
 # Required imports created for the GUI 
 import GUI_elements
 import pyswmm_Simulation
+import Parameters
 
 # Required external imports 
 import pandas as pd
@@ -102,6 +103,9 @@ class pyswmm_GUI:
         self.Rain_tab = ttk.Frame(self.tabControl)
         self.tabControl.add(self.Rain_tab,text = 'rain series')
         
+        self.EFD_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.EFD_tab,text = 'Equal Filling Degree')
+        
         # self.Control_tab = ttk.Frame(self.tabControl)
         # self.tabControl.add(self.Control_tab,text = 'Control objective')
         
@@ -118,6 +122,10 @@ class pyswmm_GUI:
         self.run_button.grid(row = 6, column = 0,sticky = W,pady = 5, padx = 5)
         GUI_elements.create_ToolTip(self.run_button,'Runs the simulation with the configuration file.')
         
+        # self.EFD_button = Button(self.Simulation_tab, text ='Create EFD', width = 15, command = lambda:GUI_elements.EFD(self))
+        # self.EFD_button.grid(row = 6, column = 2,sticky = W,pady = 5, padx = 5)
+        # GUI_elements.create_ToolTip(self.run_button,'Runs the simulation with an EFD algorithm implemented.')
+        
         # self.write_config = Button(self.Simulation_tab, text ='Save config', width = 15, command = lambda:GUI_elements.write_config(self))
         # self.write_config.grid(row = 6, column = 1,sticky = W,pady = 5, padx = 5)
         # GUI_elements.create_ToolTip(self.write_config,"Save the configuration file without running.")
@@ -131,7 +139,7 @@ class pyswmm_GUI:
         # self.SWMM_results.grid(row = 5, column = 2,sticky = W,pady = 5, padx = 5)
         # GUI_elements.create_ToolTip(self.SWMM_results,"Write the current RTC setup (specified in the simulation tab) to a SWMM file.")
         
-        Button(self.Simulation_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 6, column = 1,sticky =E, padx = 5)
+        Button(self.Simulation_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 6, column = 3,sticky =E, padx = 5)
         
 # =============================================================================
     # Create content for tabs
@@ -193,11 +201,11 @@ class pyswmm_GUI:
         # self.actuator1setting_False.insert(0,'0')
         GUI_elements.create_ToolTip(self.actuator1setting_False,'Type in the setting of the actuator when critical depth is NOT exceeded')
 
+        
+    # Dry flow or rainfall threshold
         self.Dry_flow_frame = ttk.LabelFrame(self.Rain_tab, text = 'Dry or Wet flow')
         self.Dry_flow_frame.grid(row = 1, column = 0,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
-        
 
-    # Dry flow or rainfall threshold
         Label(self.Dry_flow_frame, text = 'Wet periods are aactivated when:').grid(row = 3,column = 0,sticky = W,columnspan = 2,pady = 5)
         Label(self.Dry_flow_frame, text = 'Rainfall exceeds').grid(row = 4,column = 0,sticky = W,columnspan = 1)
         self.rainfall_threshold = Entry(self.Dry_flow_frame,width = 10,state= 'disabled')
@@ -314,7 +322,7 @@ class pyswmm_GUI:
         
         # Objective function frame
         self.objective_frame= ttk.LabelFrame(self.Simulation_tab,width=385, height=460, text = 'Control objective')
-        self.objective_frame.grid(row =1, column = 2,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.objective_frame.grid(row =2, column = 2,rowspan = 1, columnspan = 2, pady =5, padx = 5,sticky = NSEW)
         
         # Define radiobuttons for CSO objective
         self.CSO_volume = Radiobutton(self.objective_frame,text = "Reduce volume",var = self.param.CSO_objective,value = 'volume')
@@ -416,7 +424,37 @@ class pyswmm_GUI:
         # self.sensor_loc3.grid(row = 3, column = 0,sticky = W)
         # GUI_elements.create_ToolTip(self.sensor_loc_frame,"Define the ID of nodes with possibility of a sensor.")
         # self.sensor_loc1.insert(END,self.sensor1id.get())
-             
+        
+    # EFD Frame
+        self.Several_basins_frame = ttk.LabelFrame(self.Simulation_tab, text = 'RTC on several basins REMOVE IF EFD IS MADE')
+        self.Several_basins_frame.grid(row =1, column = 2,columnspan = 2, pady =5, padx = 5,sticky = NSEW)
+        
+        self.Several_basins_check = Checkbutton(self.Several_basins_frame, text = "Use RTC with several basins", variable = self.param.several_basins_RTC, command = lambda: GUI_elements.enable_several_basin_RTC(self))
+        self.Several_basins_check.deselect()
+        self.Several_basins_check.grid(row = 0, column = 0,sticky = W)
+        GUI_elements.create_ToolTip(self.Several_basins_check,"implement an RTC setup on several basins.")
+        
+        Label(self.Several_basins_frame, text = "Povide list of storage basins for the setup:").grid(row=1,column = 0,columnspan = 2,sticky='W')
+        self.several_basins_basin_list= Entry(self.Several_basins_frame,width = 30,state='disabled')
+        self.several_basins_basin_list.grid(row=2, column=0,columnspan = 2,sticky = W)
+        GUI_elements.create_ToolTip(self.several_basins_basin_list,"Specify the storage basins that are used in the RTC control. \nIt is required that the basins and actuators are paired so they appear in the same order. ")
+      
+        Label(self.Several_basins_frame, text = "Povide list of actuators for the setup:").grid(row=3,column = 0,columnspan = 2,sticky='W')
+        self.several_basins_actuators_list= Entry(self.Several_basins_frame,width = 30,state='disabled')
+        self.several_basins_actuators_list.grid(row=4, column=0,columnspan = 2,sticky = W)
+        GUI_elements.create_ToolTip(self.several_basins_actuators_list,"Specify the actuators that are used in the RTC control.\nIt is required that the basins and actuators are paired so they appear in the same order.")
+      
+        Label(self.Several_basins_frame, text = "Povide location of sensor(s):").grid(row=5,column = 0,columnspan = 2,sticky='W')
+        self.several_basins_sensors_list= Entry(self.Several_basins_frame,width = 30,state='disabled')
+        self.several_basins_sensors_list.grid(row=6, column=0,columnspan = 2,sticky = W)
+        GUI_elements.create_ToolTip(self.several_basins_sensors_list,"Specify the sensors that are used in the RTC control.")
+      
+        Label(self.Several_basins_frame, text = "Maximum number of simulations").grid(row=7,column = 0,sticky='W')
+        self.several_basins_num_simulations= Entry(self.Several_basins_frame,width = 5,state='disabled')
+        self.several_basins_num_simulations.grid(row=7, column=1,sticky = W)
+        GUI_elements.create_ToolTip(self.several_basins_num_simulations,"Specify the sensors that are used in the RTC control.")
+      
+    
 # =============================================================================
 # Content for the calibraion tab
 
@@ -598,6 +636,79 @@ class pyswmm_GUI:
         self.Sensor_validation_button = Button(self.Calibration_tab, text ='Calc model-data fit',width = 15, command = lambda: GUI_elements.sensor_validation_with_config(self))
         self.Sensor_validation_button.grid(row = 7, column = 1,sticky = E,columnspan = 1)
         GUI_elements.create_ToolTip(self.Sensor_validation_button,"Run one simulation to check model data.")
+        
+# =============================================================================
+# Content for EFD tab  
+        # EFD parameters frame
+        self.EFD_param_frame = ttk.LabelFrame(self.EFD_tab, text = 'Equal Filling Degree')
+        self.EFD_param_frame.grid(row =1, column = 0,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        
+        Label(self.EFD_param_frame, text = "Basins").grid(row= 1,column =0, sticky = E)
+        self.EFD_basins = Entry(self.EFD_param_frame,width = 30)
+        self.EFD_basins.grid(row=1, column=1,sticky = W)
+        GUI_elements.create_ToolTip(self.EFD_basins,'Specify the basins that are used in the EFD.')
+        Label(self.EFD_param_frame, text = "Actuators").grid(row= 2,column =0,sticky = E)
+        self.EFD_actuators= Entry(self.EFD_param_frame,width = 30)
+        self.EFD_actuators.grid(row=2, column=1,sticky = W)
+        GUI_elements.create_ToolTip(self.EFD_actuators,'Specify the actuators that are used in the EFD. The order should match the basins.')
+        Label(self.EFD_param_frame, text = "Basin depths").grid(row= 3,column =0,sticky = E)
+        self.Basin_depths= Entry(self.EFD_param_frame,width = 30)
+        self.Basin_depths.grid(row=3, column=1,sticky = W)
+        GUI_elements.create_ToolTip(self.Basin_depths,'Specify the actuators that are used in the EFD. The order should match the basins.')
+
+        # EFD output measures 
+        self.EFD_output_frame= ttk.LabelFrame(self.EFD_tab, text = 'EFD output???')
+        self.EFD_output_frame.grid(row =2, column = 0,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        Label(self.EFD_output_frame, text = "EFD CSO's").grid(row= 1,column =0,sticky = E)
+        self.EFD_CSO_id= Entry(self.EFD_output_frame,width = 30)
+        self.EFD_CSO_id.grid(row=1, column=1,sticky = W)
+        GUI_elements.create_ToolTip(self.EFD_CSO_id,"Specify the CSO's that should be monitored.")
+        Label(self.EFD_output_frame, text = "Output measures:").grid(row= 2,column =0,sticky = E)
+        
+        # EFD default setup
+        self.EFD_default_setup_frame= ttk.LabelFrame(self.EFD_tab, text = 'Defaul EFD inputs')
+        self.EFD_default_setup_frame.grid(row =1, column = 1,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.Use_default_setup = Radiobutton(self.EFD_default_setup_frame,text = "Use default setup",var = self.param.EFD_setup_type,value = 'default', command = lambda:GUI_elements.default_or_optimized_EFD(self))
+        self.Use_default_setup.grid(row = 1,column = 0,sticky = W,columnspan = 1,pady = 5)
+        self.Use_default_setup.select()
+       
+        # EFD settings frame for optimization 
+        # stepsize etc. 
+        self.EFD_optimized_setup_frame = ttk.LabelFrame(self.EFD_tab, text = 'EFD settings')
+        self.EFD_optimized_setup_frame.grid(row =2, column = 1,rowspan = 1, pady =5, padx = 5,sticky = NSEW)
+        self.Use_optimized_setup = Radiobutton(self.EFD_optimized_setup_frame,text = "Use optimized setup",var = self.param.EFD_setup_type,value = 'optimized', command = lambda:GUI_elements.default_or_optimized_EFD(self))
+        self.Use_optimized_setup.grid(row=0,column = 0,sticky = W,columnspan = 1,pady = 5)
+        self.Use_optimized_setup.deselect()
+        Label(self.EFD_optimized_setup_frame, text = "Number of layers in EFD").grid(row= 1,column =0,sticky = E)
+        self.no_layers= Entry(self.EFD_optimized_setup_frame,width = 15)
+        self.no_layers.grid(row=1, column=1,sticky = W)
+        self.no_layers.insert(END,3)
+        GUI_elements.create_ToolTip(self.no_layers,'Specify the number of layers in the discretized EFD setup.')
+        
+
+
+        # Default setups     
+        # Label(self.EFD_default_setup_frame, text = "Select default setup").grid(row=0,column = 1,sticky = E)
+        self.EFD_default_setup_selection = ttk.Combobox(self.EFD_default_setup_frame,width = 20,values = ('33%, 66%, 100%','77%, 88%, 99%','84%, 90%,100%','84%, 90%, 95%'),state = 'readonly')
+        self.EFD_default_setup_selection.grid(row=1, column=2)
+        GUI_elements.create_ToolTip(self.EFD_default_setup_selection,"Select the filling degrees for the basins. \nPercentages are the borders that distuingish the zones. \nThe same zones are applied to all the basins.")
+        
+        
+        
+# buttons    
+    
+        self.overwrite_button = Checkbutton(self.EFD_tab, text = "Overwrite existing configuation file", variable = self.param.Overwrite_config)
+        self.overwrite_button.select()    
+        self.overwrite_button.grid(row = 6, column = 0,sticky = W, columnspan = 3)
+        GUI_elements.create_ToolTip(self.overwrite_button,"Wen ON, the parameters specified in the GUI is written to configuration file and used for simulation. \nWhen OFF, the existing configuration file is used and inputs to the GUI are ignored.")
+
+        self.Run_EFD_button = Button(self.EFD_tab, text ='Run EFD',width = 15, command = lambda: GUI_elements.EFD_with_config(self))
+        self.Run_EFD_button.grid(row = 7, column = 0,sticky = E,columnspan = 1)
+        GUI_elements.create_ToolTip(self.Run_EFD_button,"")
+
+        Button(self.EFD_tab, text ='Exit',width = 15, command = lambda:self.window.destroy()).grid(row = 7, column = 1,sticky = E, padx = 5)
+        
+        
         
 # =============================================================================
 # Content for the results tab

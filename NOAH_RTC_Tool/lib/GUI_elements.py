@@ -19,7 +19,8 @@ import noah_calibration_tools
 from noah_calibration_tools import swmm_simulate, interpolate_swmm_times_to_obs_times, change_model_property, simulate_objective, create_new_model, create_runobjective_delete_model, generate_run_lhs, run_simplex_routine
 from model_structure_analysis import swmm_model_inventory, backwards_network_trace
 from User_defined_objective_function import User_defined_objective_function
-
+import Parameters
+import EqualFillingDegree
 # Required external imports 
 import pandas as pd
 import numpy as np
@@ -49,90 +50,93 @@ from tkintertable.TableModels import TableModel
 
 # # =============================================================================
 # Write input from GUI to configuration file        
-def write_config(self):
+# def write_config(self):
     
-    config = configparser.ConfigParser()
-    config['DEFAULT'] = {}
+#     config = configparser.ConfigParser()
+#     config['DEFAULT'] = {}
     
-    config['Settings'] = {
-                          'System_Units': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.FLOW_UNITS, 
-                          'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP,
-                          'Time_seperating_CSO_events':self.CSO_event_seperation.get(),
-                          'Max_CSO_duration':self.CSO_event_duration.get(),
-                          'CSO_type':self.CSO_type.get()
-                          }
+#     config['Settings'] = {
+#                           'System_Units': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.FLOW_UNITS, 
+#                           'Reporting_timesteps': swmmio.swmmio.inp(self.param.model_dir.get() + '/' + self.param.model_name.get() + '.inp').options.Value.REPORT_STEP,
+#                           'Time_seperating_CSO_events':self.CSO_event_seperation.get(),
+#                           'Max_CSO_duration':self.CSO_event_duration.get(),
+#                           'CSO_type':self.CSO_type.get()
+#                           }
     
-    config['Model'] = {'Modelname':self.param.model_name.get(),
-                       'Modeldirectory':self.param.model_dir.get(),                       
-                      'Rain series':''
-                      }
+#     config['Model'] = {'Modelname':self.param.model_name.get(),
+#                        'Modeldirectory':self.param.model_dir.get(),                       
+#                       'Rain series':''
+#                       }
     
-    config['RuleBasedControl'] = {
-                                  'actuator_type':self.param.actuator_type.get(),
-                                  'sensor1_id':self.sensor1id.get(),
-                                  'sensor1_critical_depth':self.sensor1setting.get(),
-                                  'actuator1_id':self.actuator1id.get(),
-                                  'actuator1_target_setting_True':self.actuator1setting_True.get(),
-                                  'actuator1_target_setting_False':self.actuator1setting_False.get(),
-                                  'sensor1_critical_depth_dryflow':self.sensor1setting_dry.get(),
-                                  'actuator1_target_setting_True_dryflow':self.actuator1setting_True_dry.get(),
-                                  'actuator1_target_setting_False_dryflow':self.actuator1setting_False_dry.get(),
-                                   'raingage1':self.raingage1.get(),
-                                   'rainfall_threshold_value':self.rainfall_threshold.get(),
-                                   'rainfall_threshold_duration':self.rainfall_time.get()
-                                  }
+#     config['RuleBasedControl'] = {
+#                                     'actuator_type':self.param.actuator_type.get(),
+#                                     'sensor1_id':self.sensor1id.get(),
+#                                     'sensor1_critical_depth':self.sensor1setting.get(),
+#                                     'actuator1_id':self.actuator1id.get(),
+#                                     'actuator1_target_setting_True':self.actuator1setting_True.get(),
+#                                     'actuator1_target_setting_False':self.actuator1setting_False.get(),
+#                                     'sensor1_critical_depth_dryflow':self.sensor1setting_dry.get(),
+#                                     'actuator1_target_setting_True_dryflow':self.actuator1setting_True_dry.get(),
+#                                     'actuator1_target_setting_False_dryflow':self.actuator1setting_False_dry.get(),
+#                                     'raingage1':self.raingage1.get(),
+#                                     'rainfall_threshold_value':self.rainfall_threshold.get(),
+#                                     'rainfall_threshold_duration':self.rainfall_time.get(),
+#                                     'Several_basins_RTC':self.param.Several_basins_RTC.get(),
+#                                     'Several_basins_basins':self.Several_basins_basin_list.get(), 
+#                                     'Several_basins_actuators':self.Several_basins_actuators_list.get()
+#                                     }
     
-    config['Optimization'] = {'UseOptimization':self.param.UseOptimization.get(),
-                              'optimization_method':self.opt_method.get(),
-                              'CSO_objective':self.param.CSO_objective.get(),
-                              'CSO_id1':self.CSO_id1.get(),
-                              'CSO_id2':self.CSO_id2.get(),
-                              'CSO_id3':self.CSO_id3.get(),
-                              'Custom_CSO_ids':self.Custom_CSO_ids.get(),
-                              'Optimized_parameter':self.optimized_parameter.get(),
-                              'expected_min_Xvalue':self.expected_min_Xvalue.get(),
-                              'expected_max_Xvalue':self.expected_max_Xvalue.get(),
-                              'max_initial_iterations':self.max_initial_iterations.get(),
-                              'max_iterations_per_minimization':self.max_iterations_per_minimization.get()                              
-                              }    
+#     config['Optimization'] = {'UseOptimization':self.param.UseOptimization.get(),
+#                               'optimization_method':self.opt_method.get(),
+#                               'CSO_objective':self.param.CSO_objective.get(),
+#                               'CSO_id1':self.CSO_id1.get(),
+#                               'CSO_id2':self.CSO_id2.get(),
+#                               'CSO_id3':self.CSO_id3.get(),
+#                               'Custom_CSO_ids':self.Custom_CSO_ids.get(),
+#                               'Optimized_parameter':self.optimized_parameter.get(),
+#                               'expected_min_Xvalue':self.expected_min_Xvalue.get(),
+#                               'expected_max_Xvalue':self.expected_max_Xvalue.get(),
+#                               'max_initial_iterations':self.max_initial_iterations.get(),
+#                               'max_iterations_per_minimization':self.max_iterations_per_minimization.get()                              
+#                               }    
     
-    config['Calibration'] = {'Calibrate_perc_imp':self.param.Calib_perc_imp.get(),
-                             'Percent_imp_min':self.percent_imp_min.get(),
-                             'Percent_imp_max':self.percent_imp_max.get(),
-                             'Calibrate_width':self.param.Calib_width.get(),
-                             'Width_min':self.Width_min.get(),
-                             'Width_max':self.Width_max.get(),
-                             'Calibrate_initial_loss':self.param.Calib_Dstore.get(),
-                             'Initial_loss_min':self.Dstore_min.get(),
-                             'Initial_loss_max':self.Dstore_max.get(),
-                             'Calibrate_roughness_pipe':self.param.Calib_n_pipe.get(),
-                             'Roughness_pipe_min':self.n_pipe_min.get(),
-                             'Roughness_pipe_max':self.n_pipe_max.get(),
-                             'Observations':self.param.obs_data.get(),
-                             'Observations_directory':self.param.obs_data_path.get(),
-                             'Calibration_sensor':self.sensor_calib.get(),
-                             'Objective_function':self.Cal_section.get(),
-                             'Calibration_start':self.Start_calib_time.get(),
-                             'Calibration_end':self.End_calib_time.get(),
-                             'Use_hotstart':self.param.use_hotstart.get(),
-                             'Hotstart_period':self.hotstart_period_h.get(),
-                             'Calibratied_area':self.param.Calib_area.get(),
-                             'lhs_simulations':self.max_initial_iterations_calib.get(),
-                             'Simplex_simulations':self.max_optimization_iterations_calib.get(),
-                             'Optimization_method':self.optimization_method_calib.get(),
-                             'Output_time_step':self.output_time_step.get(),
-                             'Save_file_as':self.save_calib_file.get()
-                             }
+#     config['Calibration'] = {'Calibrate_perc_imp':self.param.Calib_perc_imp.get(),
+#                              'Percent_imp_min':self.percent_imp_min.get(),
+#                              'Percent_imp_max':self.percent_imp_max.get(),
+#                              'Calibrate_width':self.param.Calib_width.get(),
+#                              'Width_min':self.Width_min.get(),
+#                              'Width_max':self.Width_max.get(),
+#                              'Calibrate_initial_loss':self.param.Calib_Dstore.get(),
+#                              'Initial_loss_min':self.Dstore_min.get(),
+#                              'Initial_loss_max':self.Dstore_max.get(),
+#                              'Calibrate_roughness_pipe':self.param.Calib_n_pipe.get(),
+#                              'Roughness_pipe_min':self.n_pipe_min.get(),
+#                              'Roughness_pipe_max':self.n_pipe_max.get(),
+#                              'Observations':self.param.obs_data.get(),
+#                              'Observations_directory':self.param.obs_data_path.get(),
+#                              'Calibration_sensor':self.sensor_calib.get(),
+#                              'Objective_function':self.Cal_section.get(),
+#                              'Calibration_start':self.Start_calib_time.get(),
+#                              'Calibration_end':self.End_calib_time.get(),
+#                              'Use_hotstart':self.param.use_hotstart.get(),
+#                              'Hotstart_period':self.hotstart_period_h.get(),
+#                              'Calibratied_area':self.param.Calib_area.get(),
+#                              'lhs_simulations':self.max_initial_iterations_calib.get(),
+#                              'Simplex_simulations':self.max_optimization_iterations_calib.get(),
+#                              'Optimization_method':self.optimization_method_calib.get(),
+#                              'Output_time_step':self.output_time_step.get(),
+#                              'Save_file_as':self.save_calib_file.get()
+#                              }
     
     
     
-    # save the file
-    config_name = self.param.model_name.get()
-    config_path = '../config/saved_configs/'
-    with open(config_path + config_name + '.ini','w') as configfile: 
-        config.write(configfile)
-    msg.showinfo('','Saved to configuration file')
-#===================================================================    
+#     # save the file
+#     config_name = self.param.model_name.get()
+#     config_path = '../config/saved_configs/'
+#     with open(config_path + config_name + '.ini','w') as configfile: 
+#         config.write(configfile)
+#     msg.showinfo('','Saved to configuration file')
+# #===================================================================    
         
 class parameters(object):
     def __init__(self):
@@ -143,7 +147,8 @@ class parameters(object):
         
         # RTC settings
         self.actuator_type = StringVar()
-        
+        self.UseEFD = BooleanVar()
+        self.several_basins_RTC = BooleanVar()
         # Optimization
         self.UseOptimization = BooleanVar()
         self.CSO_objective = StringVar()
@@ -169,133 +174,141 @@ class parameters(object):
         self.Calib_n_pipe = BooleanVar()
         
         self.Calib_area = StringVar()
-
-# =============================================================================
-class Read_Config_Parameters:
-    def __init__(self,config_file):
-        config = configparser.ConfigParser()
-        config.read('../config/saved_configs/'+config_file)
-        # try except are only applied on float() lines. This ensures that these can be left blank. 
-        # If they are needed in the simulation an error will occur at that point
-
-        self.system_units = config['Settings']['System_Units']
-        rpt_step_tmp = config['Settings']['Reporting_timesteps']      
-        rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
-        self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
-        try:
-            self.CSO_event_seperation = float(config['Settings']['Time_seperating_CSO_events'])
-        except ValueError:
-            # print('\nWarning: Some fields are left blank or not specified correctly\n')
-            pass
-        try:
-            self.CSO_event_duration = float(config['Settings']['Max_CSO_duration'])
-        except ValueError:
-            pass
-        self.CSO_type = config['Settings']['CSO_type']
-        self.model_name = config['Model']['modelname']
-        self.model_dir = config['Model']['modeldirectory']
-
-        # Rule Based Control                    
-        RBC = config['RuleBasedControl']
-        self.actuator_type = RBC['actuator_type']
-        self.sensor1_id = RBC['sensor1_id']    
-        self.actuator1_id = RBC['actuator1_id']
-        try:
-            self.sensor1_critical_depth = float(RBC['sensor1_critical_depth']) # It could make sense to leave this blank
-            self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
-            self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
-        except ValueError:
-            # print('Parameters for the rule based control are not specified correctly or left blank.')    
-            pass
-        try:
-            self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
-            self.actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
-            self.actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
-        except ValueError:
-            # print('Parameters for the rule based control are not specified correctly.')    
-            pass
-        self.RG1 = RBC['raingage1']
-        try:
-            self.rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
-            self.rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
-        except ValueError:
-            pass
         
-        # RTC Optimization
-        Optimization = config['Optimization']
-        self.useoptimization = bool(Optimization['useoptimization'])
-        self.optimization_method = Optimization['optimization_method']
-        self.CSO_objective = Optimization['CSO_objective']
-        self.CSO_id1 = Optimization['CSO_id1']
-        self.CSO_id2 = Optimization['CSO_id2']
-        self.CSO_id3 = Optimization['CSO_id3']
-        self.Custom_CSO_ids = Optimization['Custom_CSO_ids']
-        self.optimized_parameter = Optimization['optimized_parameter']
-        try:
-            self.min_expected_Xvalue = float(Optimization['expected_min_xvalue'])
-            self.max_expected_Xvalue = float(Optimization['expected_max_xvalue'])
-            self.max_initial_iterations = int(Optimization['max_initial_iterations'])
-            self.maxiterations = int(Optimization['max_iterations_per_minimization'])
-        except ValueError:
-            # print('Optimization parameters are not specified correctly or left blank.')
-            pass
-        
-        # Calibration
-        Calibration = config['Calibration']
-        
-        try:
-            self.calibrate_perc_imp = eval(Calibration['calibrate_perc_imp'])
-            self.percent_imp_min = float(Calibration['percent_imp_min'])
-            self.percent_imp_max = float(Calibration['percent_imp_max'])
-        except ValueError:
-            pass
-        try:    
-            self.calibrate_width = eval(Calibration['calibrate_width'])
-            self.width_min = float(Calibration['width_min'])
-            self.width_max = float(Calibration['width_max'])
-        except ValueError:
-            pass
-        try:
-            self.Calibrate_initial_loss = eval(Calibration['Calibrate_initial_loss'])
-            self.Initial_loss_min = float(Calibration['Initial_loss_min'])
-            self.Initial_loss_max = float(Calibration['Initial_loss_max'])
-        except ValueError:
-            pass
-        try:
-            self.Calibrate_roughness_pipe = eval(Calibration['Calibrate_roughness_pipe'])
-            self.Roughness_pipe_min = float(Calibration['Roughness_pipe_min'])
-            self.Roughness_pipe_max = float(Calibration['Roughness_pipe_max'])
-        except ValueError:
-            pass
-        try: 
-            self.Use_hotstart = eval(Calibration['Use_hotstart'])
-            self.hotstart_period_h = float(Calibration['Hotstart_period'])
-        except ValueError:
-            pass
-        try:
-            self.lhs_simulations = int(Calibration['lhs_simulations'])
-        except ValueError:
-            pass
-        try:
-            self.Simplex_simulations = int(Calibration['Simplex_simulations'])
-        except ValueError:
-            pass
-        try:
-            self.Output_time_step = int(Calibration['Output_time_step'])
-        except ValueError:
-            pass
-        # inpput as strings: 
-        self.Observations  = Calibration['Observations']
-        self.Observateions_dir = Calibration['Observations_directory']
-        self.Calibration_sensor = Calibration['Calibration_sensor']
-        self.Objective_function = Calibration['Objective_function']
-        self.simulationStartTime = Calibration['Calibration_start']
-        self.simulationEndTime = Calibration['Calibration_end']
-        self.Calibratied_area = Calibration['Calibratied_area']
-        self.Optimization_method = Calibration['Optimization_method']
-        self.Save_file_as = Calibration['Save_file_as']
+        self.EFD_setup_type = StringVar()
 
-# Not important:
+# # =============================================================================
+# class Read_Config_Parameters:
+#     def __init__(self,config_file):
+#         config = configparser.ConfigParser()
+#         config.read('../config/saved_configs/'+config_file)
+#         # try except are only applied on float() lines. This ensures that these can be left blank. 
+#         # If they are needed in the simulation an error will occur at that point
+
+#         self.system_units = config['Settings']['System_Units']
+#         rpt_step_tmp = config['Settings']['Reporting_timesteps']      
+#         rpt_step = datetime.strptime(rpt_step_tmp, '%H:%M:%S').time()
+#         self.report_times_steps = rpt_step.hour*60 + rpt_step.minute + rpt_step.second/60
+#         try:
+#             self.CSO_event_seperation = float(config['Settings']['Time_seperating_CSO_events'])
+#         except ValueError:
+#             # print('\nWarning: Some fields are left blank or not specified correctly\n')
+#             pass
+#         try:
+#             self.CSO_event_duration = float(config['Settings']['Max_CSO_duration'])
+#         except ValueError:
+#             pass
+#         self.CSO_type = config['Settings']['CSO_type']
+#         self.model_name = config['Model']['modelname']
+#         self.model_dir = config['Model']['modeldirectory']
+
+#         # Rule Based Control                    
+#         RBC = config['RuleBasedControl']
+#         self.actuator_type = RBC['actuator_type']
+#         self.sensor1_id = RBC['sensor1_id']    
+#         self.actuator1_id = RBC['actuator1_id']
+#         try:
+#             self.sensor1_critical_depth = float(RBC['sensor1_critical_depth']) # It could make sense to leave this blank
+#             self.actuator1_target_setting_True = float(RBC['actuator1_target_setting_True'])
+#             self.actuator1_target_setting_False = float(RBC['actuator1_target_setting_False'])
+#         except ValueError:
+#             # print('Parameters for the rule based control are not specified correctly or left blank.')    
+#             pass
+#         try:
+#             self.sensor1_critical_depth_dry = float(RBC['sensor1_critical_depth_dryflow'])
+#             self.actuator1_target_setting_True_dry = float(RBC['actuator1_target_setting_true_dryflow'])
+#             self.actuator1_target_setting_False_dry = float(RBC['actuator1_target_setting_false_dryflow'])
+#         except ValueError:
+#             # print('Parameters for the rule based control are not specified correctly.')    
+#             pass
+#         self.RG1 = RBC['raingage1']
+#         try:
+#             self.rainfall_threshold_value = float(RBC['rainfall_threshold_value'])
+#             self.rainfall_threshold_time = float(RBC['rainfall_threshold_duration'])
+#         except ValueError:
+#             pass
+        
+#         # several_basins
+#         self.Several_basins_RTC = eval(RBC['Several_basins_RTC'])
+#         self.Several_basins_basin_list = RBC['Several_basins_basins']
+#         self.Several_basins_actuators_list = RBC['Several_basins_actuators']
+                                    
+        
+#         # RTC Optimization
+#         Optimization = config['Optimization']
+#         self.useoptimization = eval(Optimization['useoptimization'])
+#         self.optimization_method = Optimization['optimization_method']
+#         self.CSO_objective = Optimization['CSO_objective']
+#         self.CSO_id1 = Optimization['CSO_id1']
+#         self.CSO_id2 = Optimization['CSO_id2']
+#         self.CSO_id3 = Optimization['CSO_id3']
+#         self.Custom_CSO_ids = Optimization['Custom_CSO_ids']
+#         self.optimized_parameter = Optimization['optimized_parameter']
+#         try:
+#             self.expected_min_xvalue = float(Optimization['expected_min_xvalue'])
+#             self.expected_max_xvalue = float(Optimization['expected_max_xvalue'])
+#             self.max_initial_iterations = int(Optimization['max_initial_iterations'])
+#             self.maxiterations = int(Optimization['max_iterations_per_minimization'])
+#         except ValueError:
+#             # print('Optimization parameters are not specified correctly or left blank.')
+#             pass
+        
+#         # Calibration
+#         Calibration = config['Calibration']
+        
+#         try:
+#             self.calibrate_perc_imp = eval(Calibration['calibrate_perc_imp'])
+#             self.percent_imp_min = float(Calibration['percent_imp_min'])
+#             self.percent_imp_max = float(Calibration['percent_imp_max'])
+#         except ValueError:
+#             pass
+#         try:    
+#             self.calibrate_width = eval(Calibration['calibrate_width'])
+#             self.width_min = float(Calibration['width_min'])
+#             self.width_max = float(Calibration['width_max'])
+#         except ValueError:
+#             pass
+#         try:
+#             self.Calibrate_initial_loss = eval(Calibration['Calibrate_initial_loss'])
+#             self.Initial_loss_min = float(Calibration['Initial_loss_min'])
+#             self.Initial_loss_max = float(Calibration['Initial_loss_max'])
+#         except ValueError:
+#             pass
+#         try:
+#             self.Calibrate_roughness_pipe = eval(Calibration['Calibrate_roughness_pipe'])
+#             self.Roughness_pipe_min = float(Calibration['Roughness_pipe_min'])
+#             self.Roughness_pipe_max = float(Calibration['Roughness_pipe_max'])
+#         except ValueError:
+#             pass
+#         try: 
+#             self.Use_hotstart = eval(Calibration['Use_hotstart'])
+#             self.hotstart_period_h = float(Calibration['Hotstart_period'])
+#         except ValueError:
+#             pass
+#         try:
+#             self.lhs_simulations = int(Calibration['lhs_simulations'])
+#         except ValueError:
+#             pass
+#         try:
+#             self.Simplex_simulations = int(Calibration['Simplex_simulations'])
+#         except ValueError:
+#             pass
+#         try:
+#             self.Output_time_step = int(Calibration['Output_time_step'])
+#         except ValueError:
+#             pass
+#         # inpput as strings: 
+#         self.Observations  = Calibration['Observations']
+#         self.Observateions_dir = Calibration['Observations_directory']
+#         self.Calibration_sensor = Calibration['Calibration_sensor']
+#         self.Objective_function = Calibration['Objective_function']
+#         self.simulationStartTime = Calibration['Calibration_start']
+#         self.simulationEndTime = Calibration['Calibration_end']
+#         self.Calibratied_area = Calibration['Calibratied_area']
+#         self.Optimization_method = Calibration['Optimization_method']
+#         self.Save_file_as = Calibration['Save_file_as']
+
+# # Not important:
 # def Calibrate(self):
     # config_file = self.param.model_name.get() + '.ini'
     # These two lines are required in order to read the configuration file
@@ -304,7 +317,7 @@ class Read_Config_Parameters:
 
 def Calibrate_with_config(self):
     if self.param.Overwrite_config.get() == True:
-        write_config(self) # Writes configuration file 
+        Parameters.write_config(self) # Writes configuration file 
     
     msg.showinfo('','Running calibration \nSee run status in console window')
     config_file = self.param.model_name.get() + '.ini'
@@ -312,7 +325,7 @@ def Calibrate_with_config(self):
 
 def Calibrate(config_file):
     # All variables are stored as inp._VarName_ and can be used in functions. 
-    inp = Read_Config_Parameters(config_file)
+    inp = Parameters.Read_Config_Parameters(config_file)
     # The Hiddenprints are only used to avoid printing the warning from the exception since this is not relevant for the end user. 
     class HiddenPrints:
         def __enter__(self):
@@ -527,7 +540,7 @@ def abs_rel_peak_objective(obs, mod):
 
 def sensor_validation_with_config(self):
     if self.param.Overwrite_config.get() == True:
-        write_config(self) # Writes configuration file 
+        parameters.write_config(self) # Writes configuration file 
     
     config_file = self.param.model_name.get() + '.ini'
     sensor_validation(config_file)
@@ -536,7 +549,7 @@ def sensor_validation_with_config(self):
 
 def sensor_validation(config_file):
     # Loading parameters
-    inp = Read_Config_Parameters(config_file)
+    inp = Parameters.Read_Config_Parameters(config_file)
     
     model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
     selected_nodes = [inp.Calibration_sensor]
@@ -672,7 +685,21 @@ def enable_RTC_optimization(self):
     self.max_iterations_per_minimization['state'] = state
     
     
-        
+def enable_several_basin_RTC(self):
+    if self.param.several_basins_RTC.get() == True:
+        state = 'normal'
+    elif self.param.several_basins_RTC.get() == False:
+        state = 'disabled'
+    self.several_basins_basin_list['state'] = state
+    self.several_basins_actuators_list['state'] = state
+    self.several_basins_sensors_list['state'] = state
+    self.several_basins_num_simulations['state'] = state
+    
+def default_or_optimized_EFD(self):
+    if self.param.EFD_setup_type.get() == 'default':
+        self.EFD_default_setup_selection['state'] = 'normal'
+    elif self.param.EFD_setup_type.get() == 'optimized':
+        self.EFD_default_setup_selection['state'] = 'disabled'
         
 # Update the text of one entry based on another.
 def update(entry_in, entry_out):
@@ -727,7 +754,7 @@ def check_custom_ids(self):
 def run(self):
     
     if self.param.Overwrite_config.get() == True:
-        write_config(self) # Writes configuration file 
+        Parameters.write_config(self) # Writes configuration file 
     
     msg.showinfo('','Running simulation \nSee run status in console window')
     config_file = self.param.model_name.get() + '.ini'
@@ -787,7 +814,7 @@ def generate_SWMM_file(self):
 
 # =============================================================================
 # User message to be printet in console:
-def user_msg(self):
+def user_msg(self,inp):
     msg = """
 Clompleted simulation {} of {}.
 Time of simulation is {}.
@@ -795,7 +822,7 @@ Expected time of completion is {}.
 """
     
     sim_num = self.sim_num
-    total_sim = self.max_initial_iterations + self.maxiterations
+    total_sim = inp.max_initial_iterations + inp.maxiterations
     sim_time = self.sim_end_time - self.sim_start_time
     Complete_time = datetime.now() + sim_time*int((total_sim-sim_num))
     print(msg.format(sim_num,total_sim,sim_time,Complete_time.strftime("%H:%M")))
@@ -1044,3 +1071,12 @@ def calibrate_results(timestamp):
 #         B4 = ttk.Button(tframe, text="Quit", command = self.StartUp_window.destroy).grid(row = 1,column = 3, sticky = E)
 #         self.StartUp_window.mainloop()
         
+    
+    
+def EFD_with_config(self):
+    if self.param.Overwrite_config.get() == True:
+        Parameters.write_config(self) # Writes configuration file 
+    
+    # msg.showinfo('','Running calibration \nSee run status in console window')
+    config_file = self.param.model_name.get() + '.ini'
+    EqualFillingDegree.equal_filling_degree(config_file)

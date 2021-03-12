@@ -22,6 +22,16 @@ import pdb
 import Parameters
 import CSO_statistics
 
+# Write results to an Excel-sheet
+import xlwt
+my_xls=xlwt.Workbook(encoding='ascii')
+my_sheet=my_xls.add_sheet("Diagnostics for convergence")
+for i in range(5):
+    my_sheet.write(0,i,"C1 basin pair {}".format(i+1))
+    my_sheet.write(0,i+5,"C2 basin pair {}".format(i+1))
+my_sheet.write(0,10,"Objective value")
+row_no = 1
+
 
 def equal_filling_degree(config_file):
     """
@@ -44,7 +54,7 @@ def equal_filling_degree(config_file):
     # All variables are stored as inp._VarName_ and can be used in functions. 
     inp = Parameters.Read_Config_Parameters(config_file)
 
-    filename = '_EFD'
+    
     # Redefining timeseries if these are not in the right directory. 
     # The Hiddenprints are only used to avoid printing the warning from the exception since this is not relevant for the end user. 
     class HiddenPrints:
@@ -103,6 +113,8 @@ def equal_filling_degree(config_file):
     except KeyError:
         model_inp = inp.model_dir + '/' + inp.model_name + '.inp'
     
+    
+    
     # DataFrame that is needed for the EFD is created 
     # input_df should be created 
         
@@ -118,8 +130,12 @@ def equal_filling_degree(config_file):
     # creating directory for the two output files
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     os.mkdir('../output/'+timestamp)   
+    filename = '_EFD'
     model_rptfile = '../output/' + timestamp + '/' + inp.model_name + filename + '.rpt'
     model_outfile = '../output/' + timestamp + '/' + inp.model_name + filename + '.out'
+    # new file is the file that the control is written to and that SWMM should run
+    new_file= str(model_inp.split('.')[0] + filename + '.' + model_inp.split('.')[1])
+    
     
     # The basin structure is defined 
     if 'Astlingen' in inp.model_name:
@@ -134,10 +150,10 @@ def equal_filling_degree(config_file):
         EFD_input_df = create_EFD_input_df(basins,depths_df,no_layers)
         
         # A SWMM file is written with the selected EFD algorithm 
-        EFD_to_SWMM(EFD_input_df,inp,timestamp,filename,basin_structure,basins,actuators,depths_df,no_layers)
+        EFD_to_SWMM(EFD_input_df,inp,timestamp,new_file,basin_structure,basins,actuators,depths_df,no_layers)
  
         # Compute the SWMM simulation 
-        run_SWMM(model_inp,model_rptfile,model_outfile)
+        run_SWMM(new_file,model_rptfile,model_outfile)
     
         CSO_stats_df = CSO_statistics.Compute_CSO_statistics(inp,CSO_ids, model_outfile)
         print(CSO_stats_df.head())
@@ -146,44 +162,57 @@ def equal_filling_degree(config_file):
     elif inp.EFD_setup_type == 'optimized':
         print('optimizing...')
         
-        start_value = [4,1]
+        start_value = [6,4,10,6,4,1,1,1,1,1]
 
         result = optimize.minimize(fun = efd_optimizer_wrapper,
-                          args = (inp,timestamp,filename,
+                          args = (inp,timestamp,new_file,
                           basin_structure,basins,actuators,depths_df,no_layers,CSO_ids,
                           model_inp,model_rptfile,model_outfile),
                           x0 = start_value, method='Nelder-Mead',
                           options = {'disp':True})
-
+        
+        my_sheet.write(row_no+1,0,result)
+        
         print('result', result)        
         
     
-def efd_optimizer_wrapper(metaparameters,inp,timestamp,filename,
+def efd_optimizer_wrapper(metaparameters,inp,timestamp,new_file,
                           basin_structure,basins,actuators,depths_df,no_layers,CSO_ids,
                           model_inp,model_rptfile,model_outfile):
-    c1 = metaparameters[0]
-    c2 = metaparameters[1]
+    c1s = metaparameters[:5]
+    c2s = metaparameters[5:]
+    print(c1s,c2s)
 
-    EFD_input_df  = custom_EFD(c1,c2,basins,depths_df,no_layers)
+    EFD_input_df  = custom_EFD(c1s,c2s,basin_structure,basins,depths_df,no_layers)
         
-    EFD_to_SWMM(EFD_input_df,inp,timestamp,filename,basin_structure,basins,actuators,depths_df,no_layers)
+    EFD_to_SWMM(EFD_input_df,inp,timestamp,model_inp,new_file,basin_structure,basins,actuators,depths_df,no_layers)
     
-    run_SWMM(model_inp,model_rptfile,model_outfile)
+    run_SWMM(new_file,model_rptfile,model_outfile)
    
     CSO_stats_df = CSO_statistics.Compute_CSO_statistics(inp,CSO_ids, model_outfile)
     # print(CSO_stats_df.head())
     total_volume = CSO_stats_df['Volume'].sum()
+    print('total volumne:', total_volume)
+
+    # Writing to Excel
+    global row_no
+    for i in range(5):
+        my_sheet.write(row_no,i,c1s[i])
+        my_sheet.write(row_no,i+5,c2s[i])
+    my_sheet.write(row_no,10,total_volume)
+    row_no += 1 
     
+    
+    my_xls.save("Convergence.xls")
     return total_volume
-  
     
     
-def run_SWMM(model_inp,model_rptfile,model_outfile):
+def run_SWMM(new_file,model_rptfile,model_outfile):
     # pass
-    with Simulation(model_inp, model_rptfile,model_outfile) as sim: 
+    with Simulation(new_file, model_rptfile,model_outfile) as sim: 
         for step in sim:
             pass
-    print('Ran SWMM file')
+    print('Ran SWMM file {} to outputfile {}'.format(new_file,model_outfile))
     
     
     
@@ -384,7 +413,7 @@ and that they are pairs listed in same order
 
 # The purpose of the function os to write the optimal settings for x into SWMM.
 # inp is the input file that is used
-def EFD_to_SWMM(x,inp,timestamp,filename,basin_structure,basins,actuators,depths_df,no_layers):    
+def EFD_to_SWMM(x,inp,timestamp,model_inp,new_file,basin_structure,basins,actuators,depths_df,no_layers):    
     """
     Input: dataframe with rows = no_basins * 3 and columns = no_layers 
     the Control section is written based on this dataframe. The end goal is to adjust the dataframe and thus optimize the RTC.
@@ -469,17 +498,19 @@ def EFD_to_SWMM(x,inp,timestamp,filename,basin_structure,basins,actuators,depths
                 count += 1
                 
     # Control section is replaced in the .inp file
-    old_file = inp.model_dir +'/'+ inp.model_name + '.inp'
-    new_file = inp.model_dir +'/'+ inp.model_name + filename + '.inp'
+    old_file = model_inp
+   
+    # new_file = inp.model_dir +'/'+ new_file_name
+    # pdb.set_trace()
     shutil.copyfile(old_file,new_file)
     # Overwrite the CONTROLS section of the new model with the adjusted data
     with pd.option_context('display.max_colwidth', 400): # set the maximum length of string to prit the full string into .inp
         replace_inp_section(new_file, '[CONTROLS]', Full_controls_section)
-    print('EFD algorithm written to {}{} with settings\n{}'.format(inp.model_name,filename,x))
+    print('EFD algorithm written to {} with settings\n{}'.format(new_file,x))
     
 
 #%% Manual / analytic solution to the parameterization
-def custom_EFD(c1,c2,basins,depths_df,no_layers):
+def custom_EFD(c1s,c2s,basin_structure,basins,depths_df,no_layers):
     """
     
 
@@ -502,104 +533,132 @@ def custom_EFD(c1,c2,basins,depths_df,no_layers):
         DESCRIPTION.
 
     """
+    # pdb.set_trace()
+    # c1s =1 # length = 5
+    # c2s= 1
     
-    # The continous parameterized version is created
-    x = np.arange(0,1.0,1/100)
-    ups_v,ds_v = np.meshgrid(x,x)
-    parameterization = parameterization_2D(c1,c2, ups_v,ds_v)
-    # the space is plotted.     
-    # contour_plot(parameterization)
+    # Creating basin pairs
+    basin_pairs = []
+    for ds_basin in basins:
+        for ups_basin in basins:
+            if basin_structure[ups_basin][ds_basin] ==1:
+                basin_pairs.append([ups_basin,ds_basin]) 
 
+    
+    # The EFD dataframe is prepared to be filled later. 
+    basins_names = [basins[int(i)] for i in (np.floor(np.arange(0,len(basins)*3)/3))]
+    index = pd.MultiIndex.from_tuples(zip(basins_names,('ds_level', 'ups_level','orifice_setting')*len(basins)))
+    EFD_input_df = pd.DataFrame((np.zeros((len(basins)*3,no_layers))),index = index)
+
+        
+    ds_values = np.zeros(len(basin_pairs),dtype=object)
+    ups_values = np.zeros(len(basin_pairs),dtype=object)
     # Orifice settings are set to 0.99 and 0.01 instead of 1 and 0 for numerical stability. 
     # These are changed to allow the orifice to be fully open and fully closed later. 
-    orifice_settings = np.linspace(0.99,0.01,no_layers)    
+  
+  
+    orifice_settings = np.array(list(np.linspace(0.99,0.01,no_layers))*len(basin_pairs)).reshape(len(basin_pairs),no_layers)
     
-    # Two equations with two unknowns: 
-        # eq1: z = 1/(1+np.exp(-c1*(ups_v-ds_v)-c2)) # z is the orifice setting, c1 and c2 are given from the optimization. 
     
-        # eq2: ups_v = 1 - ds_v # This is because the parameterization is summetric and all iso-lines are at a 45 degree angle. 
+    
+    for bas_pair_no,basin_pair in enumerate(basin_pairs):
+        print(bas_pair_no,basin_pair)
+        ups_basin = basin_pair[0]
+        ds_basin = basin_pair[1]
+        c1 = c1s[bas_pair_no]
+        c2 = c2s[bas_pair_no]
         
-        # The two unknows are ups_v and ds_v that is calculated as:
-    
-        # ds = (c1+c2+np.log(-(z-1)/z))/(2*c1)
-        # ups = (-c1+c2+np.log(-(z-1)/z))/(2*c1)
         
+        # The continous parameterized version is created
+        x = np.arange(0,1.0,1/100)
+        ups_v,ds_v = np.meshgrid(x,x)
+        parameterization = parameterization_2D(c1,c2, ups_v,ds_v)
+        # the space is plotted.     
+        # contour_plot(parameterization)
     
-    # finding upstream and downstream index of this orifice setting
-    # ups_idx = np.where(ups_v[0,:] == np.abs(round(ups,2)))[0][0]
-    # ds_idx = np.where(ds_v[:,0] == np.abs(round(ds,2)))[0][0]
+        
+        # Two equations with two unknowns: 
+            # eq1: z = 1/(1+np.exp(-c1*(ups_v-ds_v)-c2)) # z is the orifice setting, c1 and c2 are given from the optimization. 
+        
+            # eq2: ups_v = 1 - ds_v # This is because the parameterization is summetric and all iso-lines are at a 45 degree angle. 
+            
+            # The two unknows are ups_v and ds_v that is calculated as:
+        
+            # ds = (c1+c2+np.log(-(z-1)/z))/(2*c1)
+            # ups = (-c1+c2+np.log(-(z-1)/z))/(2*c1)
+            
+        
+        # finding upstream and downstream index of this orifice setting
+        # ups_idx = np.where(ups_v[0,:] == np.abs(round(ups,2)))[0][0]
+        # ds_idx = np.where(ds_v[:,0] == np.abs(round(ds,2)))[0][0]
+        
+        # print(parameterization[ds_idx,ups_idx])
+         
+        # upper and lower limits are set to unsure that the parameterization covers all orifice settings. 
+        # If only some are covered it is not correct to assume that the orifice should close completely 
+        upper_limit = 0.9
+        lower_limit = 0.1
+        if np.logical_and(np.max(parameterization) > upper_limit,np.min(parameterization) < lower_limit):
+            print('true')
+        
+            ds_index_tmp = np.zeros(no_layers)
+            ups_index_tmp = np.zeros(no_layers)
+            # finds the analytical solution for each orifice setting
+            for i in range(no_layers):
+                z = orifice_settings[bas_pair_no][i]
+                ds = (c1+c2+np.log(-(z-1)/z))/(2*c1)
+                ups = (-c1+c2+np.log(-(z-1)/z))/(2*c1)
+                # print(ds)
+                # maximum opening is 1 (0.99 is due to pythonic indexing) 
+                if ds > 1.0:
+                    ds = 0.99
+                if ups > 1.0:
+                    ups = 0.99
+                # finding upstream and downstream index of this orifice setting
+                # ds_idx = np.where(ds_v[:,0] == np.abs(round(ds,2)))[0]
+                # print(ds)
+                ds_idx = int(np.abs(ds*100))
+                # ups_idx = np.where(ups_v[0,:] == np.abs(round(ups,2)))[0][0]
+                ups_idx = int(np.abs(ups*100))
+                # print('ds_idx: ',ds_idx,'ups_idx: ',ups_idx)
+                # print('z: ',z) 
+                # print('param: ',parameterization[ds_idx,ups_idx])
+                ds_index_tmp[i] = ds_idx
+                ups_index_tmp[i] = ups_idx
+                
+                # Converted into integers 
+                ds_index_int = [int(ds_index_tmp[i]) for i in range(no_layers)] # convert to integer
+                ups_index_int = [int(ups_index_tmp[i]) for i in range(no_layers)] # convert to integer
+                
+                # ds_index and ups_index is now used to compute the borders between the zones that can be written to SWMM.
+                
+                # 1 is added as the maximum orifice setting 
+                ds_values_tmp = np.append(ds_v[ds_index_int,0],1) # This marks the center of each "zone"
+                ups_values_tmp = np.append(1,ups_v[0,ups_index_int]) # This marks the center of each "zone"
+                # pdb.set_trace()
+                # Borders between the zones are defined. 
+                ds_values[bas_pair_no] = [round((ds_values_tmp[i+1]-ds_values_tmp[i])/2 + ds_values_tmp[i],2) for i in range(no_layers)] # This marks the borders between the zones 
+                ups_values[bas_pair_no] = [round((ups_values_tmp[i]-ups_values_tmp[i+1])/2 + ups_values_tmp[i+1],2) for i in range(no_layers)] # This marks the borders between the zones 
+                
+            # Fully open and closed is set (were 0.01 and 0.99 for numerical reasons)
+            orifice_settings[bas_pair_no][0] = 1
+            orifice_settings[bas_pair_no][-1] = 0
     
-    # print(parameterization[ds_idx,ups_idx])
-     
-    # upper and lower limits are set to unsure that the parameterization covers all orifice settings. 
-    # If only some are covered it is not correct to assume that the orifice should close completely 
-    upper_limit = 0.9
-    lower_limit = 0.1
-    if np.logical_and(np.max(parameterization) > upper_limit,np.min(parameterization) < lower_limit):
-        print('true')
-    
-        ds_index_tmp = np.zeros(no_layers)
-        ups_index_tmp = np.zeros(no_layers)
-        # finds the analytical solution for each orifice setting
-        for i in range(no_layers):
-            z = orifice_settings[i]
-            ds = (c1+c2+np.log(-(z-1)/z))/(2*c1)
-            ups = (-c1+c2+np.log(-(z-1)/z))/(2*c1)
-            # print(ds)
-            # maximum opening is 1 (0.99 is due to pythonic indexing) 
-            if ds > 1.0:
-                ds = 0.99
-            if ups > 1.0:
-                ups = 0.99
-            # finding upstream and downstream index of this orifice setting
-            # ds_idx = np.where(ds_v[:,0] == np.abs(round(ds,2)))[0]
-            # print(ds)
-            ds_idx = int(np.abs(ds*100))
-            # ups_idx = np.where(ups_v[0,:] == np.abs(round(ups,2)))[0][0]
-            ups_idx = int(np.abs(ups*100))
-            # print('ds_idx: ',ds_idx,'ups_idx: ',ups_idx)
-            # print('z: ',z) 
-            # print('param: ',parameterization[ds_idx,ups_idx])
-            ds_index_tmp[i] = ds_idx
-            ups_index_tmp[i] = ups_idx
-            
-            # Converted into integers 
-            ds_index_int = [int(ds_index_tmp[i]) for i in range(no_layers)] # convert to integer
-            ups_index_int = [int(ups_index_tmp[i]) for i in range(no_layers)] # convert to integer
-            
-            # ds_index and ups_index is now used to compute the borders between the zones that can be written to SWMM.
-            
-            # 1 is added as the maximum orifice setting 
-            ds_values_tmp = np.append(ds_v[ds_index_int,0],1) # This marks the center of each "zone"
-            ups_values_tmp = np.append(1,ups_v[0,ups_index_int]) # This marks the center of each "zone"
-            
-            # Borders between the zones are defined. 
-            ds_values = [round((ds_values_tmp[i+1]-ds_values_tmp[i])/2 + ds_values_tmp[i],2) for i in range(no_layers)] # This marks the borders between the zones 
-            ups_values = [round((ups_values_tmp[i]-ups_values_tmp[i+1])/2 + ups_values_tmp[i+1],2) for i in range(no_layers)] # This marks the borders between the zones 
-            
-        # Fully open and closed is set (were 0.01 and 0.99 for numerical reasons)
-        orifice_settings[0] = 1
-        orifice_settings[-1] = 0
+            # The orders are added to the parameterized figure
+            # contour_plot(parameterization,discrete_grid = True, discrete_x = ds_values, discrete_y = ups_values)
 
-        # The orders are added to the parameterized figure
-        # contour_plot(parameterization,discrete_grid = True, discrete_x = ds_values, discrete_y = ups_values)
-
-
-        # The EFD dataframe is written with the borders determined earlier. 
-        basins_names = [basins[int(i)] for i in (np.floor(np.arange(0,len(basins)*3)/3))]
-        index = pd.MultiIndex.from_tuples(zip(basins_names,('ds_level', 'ups_level','orifice_setting')*len(basins)))
-        EFD_input_df = pd.DataFrame((np.zeros((len(basins)*3,no_layers))),index = index)
+        else: 
+            # Do something if the parameterization is not good enough (i.e. not covering enough orifice settings)
+            print('false')
+            # EFD_input_df = None
+          
         # pdb.set_trace()
         for i,basin in enumerate(basins):
-            EFD_input_df.loc[basin,'ds_level'] = np.array(ds_values)*depths_df.loc[basin][0]
-            EFD_input_df.loc[basin,'ups_level'] = np.array(ups_values)*depths_df.loc[basin][0]
-            EFD_input_df.loc[basin,'orifice_setting'] = np.array(orifice_settings)
+            EFD_input_df.loc[basin,'ds_level'] = np.array(ds_values[bas_pair_no])*depths_df.loc[basin][0]
+            EFD_input_df.loc[basin,'ups_level'] = np.array(ups_values[bas_pair_no])*depths_df.loc[basin][0]
+            EFD_input_df.loc[basin,'orifice_setting'] = np.array(orifice_settings[bas_pair_no])
             
             # print(EFD_input_df)
-    else: 
-        # Do something if the parameterization is not good enough (i.e. not covering enough orifice settings)
-        print('false')
-        # EFD_input_df = None
     
 
     return EFD_input_df
@@ -682,3 +741,8 @@ def custom_EFD(c1,c2,basins,depths_df,no_layers):
 
 if __name__ == "__main__":
     equal_filling_degree('Astlingen.ini')
+    # pass
+
+
+
+my_xls.save("Convergence.xls")

@@ -20,7 +20,7 @@ from noah_calibration_tools import swmm_simulate, interpolate_swmm_times_to_obs_
 from model_structure_analysis import swmm_model_inventory, backwards_network_trace
 from User_defined_objective_function import User_defined_objective_function
 import Parameters
-import EqualFillingDegree
+import SWMMControlFunction
 # Required external imports 
 import pandas as pd
 import numpy as np
@@ -147,7 +147,6 @@ class parameters(object):
         
         # RTC settings
         self.actuator_type = StringVar()
-        self.UseEFD = BooleanVar()
         self.several_basins_RTC = BooleanVar()
         # Optimization
         self.UseOptimization = BooleanVar()
@@ -175,7 +174,7 @@ class parameters(object):
         
         self.Calib_area = StringVar()
         
-        self.EFD_setup_type = StringVar()
+        self.Control_setup_type = StringVar()
 
 # # =============================================================================
 # class Read_Config_Parameters:
@@ -685,22 +684,23 @@ def enable_RTC_optimization(self):
     self.max_iterations_per_minimization['state'] = state
     
     
-def enable_several_basin_RTC(self):
-    if self.param.several_basins_RTC.get() == True:
-        state = 'normal'
-    elif self.param.several_basins_RTC.get() == False:
-        state = 'disabled'
-    self.several_basins_basin_list['state'] = state
-    self.several_basins_actuators_list['state'] = state
-    self.several_basins_sensors_list['state'] = state
-    self.several_basins_num_simulations['state'] = state
+# def enable_several_basin_RTC(self):
+#     if self.param.several_basins_RTC.get() == True:
+#         state = 'normal'
+#     elif self.param.several_basins_RTC.get() == False:
+#         state = 'disabled'
+#     self.several_basins_basin_list['state'] = state
+#     self.several_basins_actuators_list['state'] = state
+#     self.several_basins_sensors_list['state'] = state
+#     self.several_basins_num_simulations['state'] = state
     
-def default_or_optimized_EFD(self):
-    if self.param.EFD_setup_type.get() == 'default':
-        self.EFD_default_setup_selection['state'] = 'normal'
-    elif self.param.EFD_setup_type.get() == 'optimized':
-        self.EFD_default_setup_selection['state'] = 'disabled'
-        
+def default_or_optimized_Control(self):
+    if self.param.Control_setup_type.get() == 'default':
+        self.Default_setup_selection['state'] = 'normal'
+        self.no_layers['state'] = 'disabled'
+    elif self.param.Control_setup_type.get() == 'optimized':
+        self.Default_setup_selection['state'] = 'disabled'
+        self.no_layers['state'] = 'normal'
 # Update the text of one entry based on another.
 def update(entry_in, entry_out):
     entry_out.delete(0, END)
@@ -1073,10 +1073,10 @@ def calibrate_results(timestamp):
         
     
     
-def EFD_with_config(self):
+def Control_with_config(self):
     if self.param.Overwrite_config.get() == True:
         Parameters.write_config(self) # Writes configuration file 
     
     # msg.showinfo('','Running calibration \nSee run status in console window')
     config_file = self.param.model_name.get() + '.ini'
-    EqualFillingDegree.equal_filling_degree(config_file)
+    SWMMControlFunction.Main_control_function_from_GUI(config_file)

@@ -83,12 +83,12 @@ def write_config(self):
                                     'actuator1_target_setting_False_dryflow':self.actuator1setting_False_dry.get(),
                                     'raingage1':self.raingage1.get(),
                                     'rainfall_threshold_value':self.rainfall_threshold.get(),
-                                    'rainfall_threshold_duration':self.rainfall_time.get(),
-                                    'Several_basins_RTC':self.param.several_basins_RTC.get(),
-                                    'Several_basins_basins':self.several_basins_basin_list.get(), 
-                                    'Several_basins_actuators':self.several_basins_actuators_list.get(),
-                                    'Several_basins_sensors':self.several_basins_sensors_list.get(),
-                                    'Several_basins_num_simulations':self.several_basins_num_simulations.get() 
+                                    'rainfall_threshold_duration':self.rainfall_time.get()
+                                    # 'Several_basins_RTC':self.param.several_basins_RTC.get(),
+                                    # 'Several_basins_basins':self.several_basins_basin_list.get(), 
+                                    # 'Several_basins_actuators':self.several_basins_actuators_list.get(),
+                                    # 'Several_basins_sensors':self.several_basins_sensors_list.get(),
+                                    # 'Several_basins_num_simulations':self.several_basins_num_simulations.get() 
                                     }
     
     config['Optimization'] = {'UseOptimization':self.param.UseOptimization.get(),
@@ -134,12 +134,13 @@ def write_config(self):
                              }
     
     
-    config['EqualFillingDegree'] = {'EFD_basins':self.EFD_basins.get(),
-                                    'EFD_actuators':self.EFD_actuators.get(),
+    config['Parameterized_control'] = {'basins':self.Control_basins.get(),
+                                    'actuators':self.Control_actuators.get(),
                                     'Basin_depths':self.Basin_depths.get(),
                                     'no_layers':self.no_layers.get(),
-                                    'EFD_CSO_id':self.EFD_CSO_id.get(),
-                                    'EFD_setup_type':self.param.EFD_setup_type.get()
+                                    'CSO_ids':self.Control_CSO_id.get(),
+                                    'Control_setup_type':self.param.Control_setup_type.get(),
+                                    'Default_setup_selection':self.Default_setup_selection.get()
                                     }
     
     
@@ -205,14 +206,14 @@ class Read_Config_Parameters:
             pass
         
         # several_basins
-        try:
-            self.several_basins_RTC = eval(RBC['Several_basins_RTC'])
-            self.several_basins_basins_list = RBC['Several_basins_basins']
-            self.several_basins_actuators_list = RBC['Several_basins_actuators']
-            self.several_basins_sensors_list = RBC['Several_basins_sensors']
-            self.several_basins_num_simulations = int(RBC['Several_basins_num_simulations'])
-        except ValueError:
-            pass
+        # try:
+        #     self.several_basins_RTC = eval(RBC['Several_basins_RTC'])
+        #     self.several_basins_basins_list = RBC['Several_basins_basins']
+        #     self.several_basins_actuators_list = RBC['Several_basins_actuators']
+        #     self.several_basins_sensors_list = RBC['Several_basins_sensors']
+        #     self.several_basins_num_simulations = int(RBC['Several_basins_num_simulations'])
+        # except ValueError:
+        #     pass
                                     
         
         # RTC Optimization
@@ -290,15 +291,16 @@ class Read_Config_Parameters:
         self.Save_file_as = Calibration['Save_file_as']
         
         # EqualFillingDegree
-        EqualFillingDegree = config['EqualFillingDegree']
+        Parameterized_control = config['Parameterized_control']
         try:
-            self.EFD_basins = EqualFillingDegree['efd_basins']
-            self.EFD_actuators= EqualFillingDegree['efd_actuators']
-            self.basin_depths  = EqualFillingDegree['basin_depths']
-            self.no_layers = int(EqualFillingDegree['no_layers'])
-            self.EFD_CSO_id = EqualFillingDegree['efd_cso_id']
+            self.Control_basins = Parameterized_control['basins']
+            self.Control_actuators= Parameterized_control['actuators']
+            self.basin_depths  = Parameterized_control['basin_depths']
+            self.no_layers = int(Parameterized_control['no_layers'])
+            self.Control_CSO_id= Parameterized_control['cso_ids']
         except ValueError:
             pass
         
-        self.EFD_setup_type = EqualFillingDegree['EFD_setup_type']
+        self.Control_setup_type = Parameterized_control['Control_setup_type']
+        self.Default_setup_selection = int(Parameterized_control['Default_setup_selection'])
     
